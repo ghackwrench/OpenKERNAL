@@ -121,7 +121,13 @@ init
         jsr     keyboard.init
         rts
 
-error:
+tick
+        inc     kernel.ticks
+        bne     _end
+        inc     kernel.ticks+1
+_end    rts
+
+error
         lda     #<_msg
         sta     src
         lda     #>_msg
@@ -134,7 +140,6 @@ _loop   lda     (src),y
         bra     _loop
 _done   jmp     wreset       
 _msg    .null   "Error"
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

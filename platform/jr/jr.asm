@@ -109,21 +109,21 @@ init
         jsr     kernel.init
         jsr     console.init 
         bcs     _out
-        stz     shadow1
+
         stz     $1
-        jsr     frame_init
-        bcs     _out
+        jsr     tick_init
         jsr     ps2.init
         bcs     _out
 
 _out    rts        
 
 
-frame_init  ; TODO: move to kernel
+tick_init
+        ; TODO: allocate the device handle.
 
-        lda     #<frame_irq
+        lda     #<kernel.tick
         sta     frame+0
-        lda     #>frame_irq
+        lda     #>kernel.tick
         sta     frame+1
 
         lda     #<frame
@@ -133,18 +133,6 @@ frame_init  ; TODO: move to kernel
         lda     #irq.frame
         jsr     irq.enable
         
-        rts
-
-frame_irq
-
-_ticks
-        inc     kernel.ticks
-        bne     _end
-        inc     kernel.ticks+1
-_end
-        
-        #spin   0
-        ;jsr platform.kbd_irq
         rts
 
 
