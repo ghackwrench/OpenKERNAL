@@ -1,0 +1,11 @@
+OpenKERNAL is provided under:
+
+    SPDX-License-Identifier: GPL-3.0-only
+
+NOTE:
+
+    To clarify, as with the Linux kernel, this copyright does not cover user
+    programs which simply use kernel services by normal system calls - this is
+    considered normal use of the kernel, and does not fall under the heading
+    of "derived work".  - Jessie Oberreuter
+
