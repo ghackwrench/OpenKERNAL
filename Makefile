@@ -36,7 +36,7 @@ deepclean: clean
 	find . -name "*#" -exec rm {} \;
 
 
-COPT = -C -Wall -Werror -Wno-shadow -x --verbose-list
+COPT = -I . -C -Wall -Werror -Wno-shadow -x --verbose-list
 
 ####### Kernal ###########################################
 

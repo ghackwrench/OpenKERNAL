@@ -101,18 +101,12 @@ input       .byte       ?
 
             .section    kernel
             
-fcb         .macro  ; For importing TinyCore fonts.
-            .byte   \@
-            .endm
 
-font        
-            .fill       20*8,0
-            .include    "8x8.fcb"
 
-thread  .namespace  ; For devices borrowed from the TinyCore kernel.
+thread      .namespace  ; For devices borrowed from the TinyCore kernel.
 yield       wai
             rts
-        .endn
+            .endn
 
 init
       ; Initialize device driver services.

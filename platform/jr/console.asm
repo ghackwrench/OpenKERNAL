@@ -1,7 +1,43 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.
+;
+; This file is part of OpenKERNAL -- a clean-room implementation of the
+; KERNAL interface documented in the Commodore 64 Programmer's Reference.
+; 
+; OpenKERNAL is free software: you may redistribute it and/or modify it under
+; the terms of the GNU Lesser General Public License as published by the Free
+; Software Foundation, either version 3 of the License, or (at your option)
+; any later version.
+; 
+; OpenKERNAL is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+; for more details.
+; 
+; You should have received a copy of the GNU Lesser General Public License
+; along with OpenKERNAL. If not, see <https://www.gnu.org/licenses/>.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Low level Console driver.
+; TODO: move screen editor to kernel.
+
             .cpu    "w65c02"
 
             .namespace  platform
 console     .namespace
+
+
+ROWS = 60
+COLS = 80
+TABS = 4
+
+
+; IO PAGE 0
+TEXT_LUT_FG      = $D800
+TEXT_LUT_BG	 = $D840
+; Text Memory
+TEXT_MEM         = $C000 	; IO Page 2
+COLOR_MEM        = $C000 	; IO Page 3
 
             .section    dp
 src         .word   ?
@@ -15,51 +51,30 @@ color       .byte   ?
 scratch     .byte   ?
             .send
 
+
             .section    kernel
-ROWS = 60
-COLS = 80
-TABS = 4
 
+fcb         .macro  ; For importing TinyCore fonts.
+            .byte   \@
+            .endm
 
-; IO PAGE 0
-TEXT_LUT_FG      = $D800
-TEXT_LUT_BG	 = $D840
-; Text Memory
-TEXT_MEM         = $C000 	; IO Page 2
-COLOR_MEM        = $C000 	; IO Page 3
+font        
+            .fill       20*8,0
+            .include    "hardware/8x8.fcb"
 
 
 init
-            stz     shadow1
-            stz     $1
-
             jsr     TinyVky_Init
             lda     #$e6
             sta     color
             jsr     cls
-            
-            stz     shadow1
-            stz     $1
 
             clc
             rts
 
 
-
-welcome:
-            ldy     #0
-_loop       lda     _msg,y
-            beq     _out
-            jsr     puts
-            iny
-            bra     _loop
-_out        rts
-            .enc    "screen"
-_msg        .null   "Welcome!"      
-            .enc    "none"
-
-
 TinyVky_Init:
+            stz     $1
 
             lda     #Mstr_Ctrl_Text_Mode_En;
             sta     MASTER_CTRL_REG_L
@@ -76,15 +91,14 @@ TinyVky_Init:
 init_palette
 
             ldx     #0
-_loop       lda     palette,x
+_loop       lda     _palette,x
             sta     TEXT_LUT_FG,x
             sta     TEXT_LUT_BG,x
             inx
             cpx     #64
             bne     _loop
             rts
-
-palette
+_palette
             .dword  $000000
             .dword  $ffffff
             .dword  $880000
@@ -111,12 +125,25 @@ init_border
 
 
 init_font:
+            lda     $1
+            pha
 
+            lda     #1
+            sta     $1
+            jsr     _install
+            
+            pla
+            sta     $1
+
+            clc
+            rts
+            
+_install
           ; Install lower half
 
-            lda     #<kernel.font
+            lda     #<font
             sta     src+0
-            lda     #>kernel.font
+            lda     #>font
             sta     src+1
 
             lda     #$c0
@@ -127,32 +154,22 @@ init_font:
             lda     #>(128 * 8)
             sta     count+1
             
-            lda     #1
-            sta     shadow1
-            sta     $1
             jsr     long_move
 
           ; Install upper half
 
-            lda     #<kernel.font
+            lda     #<font
             sta     src+0
-            lda     #>kernel.font
+            lda     #>font
             sta     src+1
 
             stz     count
             lda     #>(128 * 8)
             sta     count+1
             
-            lda     #1
-            sta     shadow1
-            sta     $1
             jsr     long_move2
 
-            stz     shadow1
-            stz     $1
-
             rts
-            
 
 long_move            
             phx
