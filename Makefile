@@ -57,6 +57,7 @@ CORE	= \
 C256JR	= \
 	platform/jr/jr.asm \
 	platform/jr/irq.asm \
+	platform/jr/ps2.asm \
 	platform/jr/console.asm \
 	platform/jr/FPGA/TinyVicky_Def.asm \
 	platform/jr/FPGA/interrupt_def.asm \
@@ -66,7 +67,6 @@ C256JR	= \
 	hardware/ps2_kbd1.asm \
 	hardware/ps2_kbd2.asm \
 	hardware/keys.asm \
-	hardware/last.asm \
 
 # Make a KERNAL for the C256jr.  The .bin should be loaded at $e000.
 

@@ -32,6 +32,10 @@ wreset      jmp     wreset
 
 platform    .namespace
 
+            .section    dp
+iomap       .byte       ?       ; Holds $1 during interrupt processing.
+            .send            
+
             .section    kmem
 shadow0     .byte       ?
 shadow1     .byte       ?
@@ -114,7 +118,7 @@ init
         jsr     irq.init
         jsr     frame_init
         bcs     _out
-        jsr     ps2_init
+        jsr     ps2.init
         bcs     _out
 
 _out    rts        
@@ -167,47 +171,18 @@ hw_irq:
         phx
         phy
         
+        lda     $1
+        sta     iomap
         jsr     irq.dispatch
        
 _resume
-        lda     shadow1
+        lda     iomap
         sta     $1
         
         ply
         plx
         pla
         rti
-
-ps2_init ; TODO: move to PS2
-   stz shadow1
-   stz $1
-        jsr     i8042.init
-        bcs     _out
-        jsr     kernel.device.open
-        bcs     _out
-
-        phx
-        txa
-        ldy     #irq.ps2_0
-        jsr     hardware.ps2.init
-        bcs     _e1
-        jsr     kernel.device.open
-_e1     plx
-        bcs     _out
-
-       
-        phx
-        txa
-        ldy     #irq.ps2_1
-        jsr     hardware.ps2.init
-        bcs     _e2
-        jsr     kernel.device.open
-_e2     plx
-        bcs     _out
-        
-        clc
-_out    rts
-
 
         .send
         .endn
