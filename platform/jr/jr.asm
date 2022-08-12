@@ -82,7 +82,6 @@ hw_reset:
         bcs     _error
 
       ; Default $c000 to general I/O.
-        stz     shadow1
         stz     $1
         
       ; Chain to the kernel
@@ -106,16 +105,12 @@ _msg    .null   "Upload"
 
 
 init
-        stz     shadow1
-        stz     $1
-        jsr     kernel.keyboard.init
+        jsr     irq.init
+        jsr     kernel.init
         jsr     console.init 
         bcs     _out
         stz     shadow1
         stz     $1
-        jsr     kernel.token.init
-        jsr     kernel.device.init
-        jsr     irq.init
         jsr     frame_init
         bcs     _out
         jsr     ps2.init

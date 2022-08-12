@@ -18,6 +18,8 @@
 ; along with OpenKERNAL. If not, see <https://www.gnu.org/licenses/>.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Memory layout and general support for TinyCore device drivers.
+
             .cpu    "w65c02"
             
 ;reserved   = $0000     ; $00 - $02
@@ -99,21 +101,25 @@ input       .byte       ?
 
             .section    kernel
             
+fcb         .macro  ; For importing TinyCore fonts.
+            .byte   \@
+            .endm
+
 font        
-fcb     .macro
-        .byte   \@
-        .endm
-.if true
-            .fill   20*8,0
-            .include     "8x8.fcb"
-.else
-            .binary     "characters.906143-02.bin"
-.endif
+            .fill       20*8,0
+            .include    "8x8.fcb"
 
 thread  .namespace  ; For devices borrowed from the TinyCore kernel.
 yield       wai
             rts
         .endn
+
+init
+      ; Initialize device driver services.
+        jsr     token.init
+        jsr     device.init
+        jsr     keyboard.init
+        rts
 
 error:
         lda     #<_msg
