@@ -1,3 +1,23 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.
+;
+; This file is part of OpenKERNAL -- a clean-room implementation of the
+; KERNAL interface documented in the Commodore 64 Programmer's Reference.
+; 
+; OpenKERNAL is free software: you may redistribute it and/or modify it under
+; the terms of the GNU Lesser General Public License as published by the Free
+; Software Foundation, either version 3 of the License, or (at your option)
+; any later version.
+; 
+; OpenKERNAL is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+; for more details.
+; 
+; You should have received a copy of the GNU Lesser General Public License
+; along with OpenKERNAL. If not, see <https://www.gnu.org/licenses/>.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
             .cpu    "w65c02"
             
 ;reserved   = $0000     ; $00 - $02
@@ -24,18 +44,21 @@ free_mem
 
 
 
-;*           = $a000     ; BASIC starts here 
-;basic       .binary     "64c.251913-01.bin", $0, $2000
+; $e000 - $e500 contains a simple command line shell which may be
+; used to load applications in the absence of either CBM BASIC or
+; a more general ROM.  If CBM BASIC is bundled, it will overwrite
+; this section of the kernel. 
 
 *           = $e000
-;            .binary     "64c.251913-01.bin", $2000, $0500
-            .fill       $500,0
+            .dsection   cli
+            .cerror * > $e4ff, "Out of cli space."
+
+; Start of the kernel proper, pushed back to accomodate the use of
+; CBM BASIC.
+*           = $e500
             .dsection   tables
             .dsection   kernel
             .cerror * > $feff, "Out of kernel space."
-
-*           = $ff00
-wreset      jmp     wreset  ; Stable
 
 *           = $ff81
 kernel      .namespace
@@ -70,6 +93,10 @@ current_dev .byte       ?
 input       .byte       ?
             .send
 
+            .section    cli
+            .byte   0
+            .send          
+
             .section    kernel
             
 font        
@@ -100,7 +127,7 @@ _loop   lda     (src),y
         iny
         bra     _loop
 _done   jmp     wreset       
-_msg    .null   "Upload"
+_msg    .null   "Error"
 
 
 

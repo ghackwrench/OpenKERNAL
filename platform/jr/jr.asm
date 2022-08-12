@@ -1,9 +1,34 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.
+;
+; This file is part of OpenKERNAL -- a clean-room implementation of the
+; KERNAL interface documented in the Commodore 64 Programmer's Reference.
+; 
+; OpenKERNAL is free software: you may redistribute it and/or modify it under
+; the terms of the GNU Lesser General Public License as published by the Free
+; Software Foundation, either version 3 of the License, or (at your option)
+; any later version.
+; 
+; OpenKERNAL is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+; for more details.
+; 
+; You should have received a copy of the GNU Lesser General Public License
+; along with OpenKERNAL. If not, see <https://www.gnu.org/licenses/>.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Startup for OpenKERNAL on the C256 Foenix Jr.
+
             .cpu    "w65c02"
 
 *           = $fffa ; Hardware vectors.
             .word   platform.hw_nmi
             .word   platform.hw_reset
             .word   platform.hw_irq
+
+*           = $ff00 ; Keep the Jr's CPU busy during code upload.
+wreset      jmp     wreset
 
 platform    .namespace
 
@@ -29,7 +54,7 @@ spin    .macro   OFFSET
 
             .section    kernel
 
-booted      .byte       0
+booted      .byte       0       ; Reset detect; overwritten by a code push.
 
 hw_reset:
 
@@ -39,51 +64,46 @@ hw_reset:
         ldx     #$ff
         txs        
 
-        lda     #1
-        sta     nmi_flag
+      ; "clear" the NMI flag.
+        tsx
+        stx     nmi_flag
 
+      ; Check for a reset after the kernel has started.
         lda     booted
-        beq     _init
-
-      ; Reset pressed again ... prepare for a fresh load
-        jsr     console.init
-        jmp     error         
+        bne     upload  ; Enter "wait for upload" mode.
+        inc     booted
 
       ; Initialize the hardware
-_init   inc     booted
         jsr     init
+        bcs     _error
 
-      ; Map the I/O space
+      ; Default $c000 to general I/O.
         stz     shadow1
         stz     $1
         
       ; Chain to the kernel
         jmp     kernel.start
+_error  jmp     kernel.error
+
+upload: ; TODO: use kernel string service
+        jsr     console.init
+        lda     #<_msg
+        sta     kernel.src
+        lda     #>_msg
+        sta     kernel.src+1
+        ldy     #0
+_loop   lda     (kernel.src),y
+        beq     _done
+        jsr     console.putc
+        iny
+        bra     _loop
+_done   jmp     wreset       
+_msg    .null   "Upload"
+
 
 init
-        jsr     _init
-        bcs     error
-     rts    ; to basic
-        
-        lda     #'*'
-        jsr     platform.console.putc
-        jsr     platform.console.putc
-        jsr     platform.console.putc
-        jsr     platform.console.putc
-
-        ldx     #0
-        ldy     #3
-        jsr     platform.console.gotoxy
-
-_loop
-        jsr     kernel.keyboard.deque
-        bcs     _loop
-        jsr     platform.console.putc
-        bra     _loop
-
-        rts
-
-_init
+        stz     shadow1
+        stz     $1
         jsr     kernel.keyboard.init
         jsr     console.init 
         bcs     _out
@@ -99,10 +119,8 @@ _init
 
 _out    rts        
 
-error   jmp     kernel.error
-        
 
-frame_init
+frame_init  ; TODO: move to kernel
 
         lda     #<frame_irq
         sta     frame+0
@@ -160,7 +178,7 @@ _resume
         pla
         rti
 
-ps2_init
+ps2_init ; TODO: move to PS2
    stz shadow1
    stz $1
         jsr     i8042.init
