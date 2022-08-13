@@ -62,8 +62,6 @@ kernel      .namespace
 frame
 Devices     .fill       256
 DevState    .fill       256
-            
-;            .fill       256     ; Something goes wonky otherwise...
             .send            
 
             .namespace  kernel
@@ -84,12 +82,11 @@ input       .byte       ?
             .send
 
             .section    cli
-            .byte   0
+            .byte   0   ; TODO: Implement a fall-back CLI here.
             .send          
 
             .section    kernel
             
-
 
 thread      .namespace  ; For devices borrowed from the TinyCore kernel.
 yield       wai
