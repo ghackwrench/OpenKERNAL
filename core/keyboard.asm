@@ -1,3 +1,7 @@
+; OpenKERNAL - a clean-room implementation of the C64's KERNAL ABI.
+; Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.
+; SPDX-License-Identifier: GPL-3.0-only
+
             .cpu    "w65c02"
 
             .namespace  kernel
@@ -6,7 +10,6 @@ keyboard    .namespace
             .section    kmem
 head        .byte       ?
 tail        .byte       ?
-hold        .byte       ?
             .send
             
 BUF_SIZE = 16
@@ -20,7 +23,6 @@ buf         .fill       BUF_SIZE
 init
             stz     head
             stz     tail
-            stz     hold
             rts
 
 enque

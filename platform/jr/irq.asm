@@ -2,6 +2,8 @@
 ; Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.
 ; SPDX-License-Identifier: GPL-3.0-only
 
+; This file is from the w6502c TinyCore kernel by the same author.
+
             .cpu    "w65c02"
 
 irq         .namespace

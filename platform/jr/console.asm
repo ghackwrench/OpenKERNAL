@@ -45,6 +45,7 @@ fcb         .macro  ; For importing TinyCore fonts.
 font        
             .fill       20*8,0
             .include    "hardware/8x8.fcb"
+            ;.binary    "Bm437_PhoenixEGA_8x8.bin", 160, $400
 
 
 init

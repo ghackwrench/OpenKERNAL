@@ -1,3 +1,9 @@
+; OpenKERNAL - a clean-room implementation of the C64's KERNAL ABI.
+; Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.
+; SPDX-License-Identifier: GPL-3.0-only
+
+; This file is from the w6502c TinyCore kernel by the same author.
+
             .cpu        "w65c02"
             
             .namespace  kernel
@@ -82,7 +88,7 @@ free
             rts
 
 install
-    ; kernel.src function table.
+    ; IN: kernel.src points to the function table.
             pha
             phx
             phy
