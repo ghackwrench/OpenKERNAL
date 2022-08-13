@@ -466,6 +466,7 @@ screen
 
         lda     platform.console.cur_x
         sta     scrape_x
+        sta     quoted      ; Disables toupper for INPUT.
 
 _read   jsr     kernel.keyboard.deque
         bcc     _key
