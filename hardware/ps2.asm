@@ -170,7 +170,7 @@ data        .word   wait_data
 kbd1        .word   state_kbd1      ; Mode-1 keyboard state machine
 kbd2        .word   state_kbd2      ; Mode-2 keyboard state machine
 mouse0      .word   state_mouse0    ; Original 3-byte state machine
-end         .end
+end         .ends
 
 
 
