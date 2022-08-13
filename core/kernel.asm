@@ -43,8 +43,8 @@ free_mem    = $800  ; Traditional start.
 ; this section of the kernel. 
 
 *           = $e000
-            .dsection   cli
-            .cerror * > $e4ff, "Out of cli space."
+            .dsection   shell
+            .cerror * > $e4ff, "Out of shell space."
 
 ; Start of the kernel proper, pushed back to accomodate the use of
 ; CBM BASIC.
@@ -69,6 +69,7 @@ DevState    .fill       256
             .section    dp
 ticks       .word   ?
 src         .word   ?   ; src ptr for copy operations.
+dest        .word   ?   ; dest ptr for copy operations.
             .send
 
 
@@ -81,13 +82,8 @@ current_dev .byte       ?
 input       .byte       ?
             .send
 
-            .section    cli
-            .byte   0   ; TODO: Implement a fall-back CLI here.
-            .send          
-
             .section    kernel
             
-
 thread      .namespace  ; For devices borrowed from the TinyCore kernel.
 yield       wai
             rts
@@ -120,6 +116,14 @@ _loop   lda     (src),y
 _done   jmp     wreset       
 _msg    .null   "Error"
 
+strcmp      ldy     #$ff
+_loop       iny
+            lda     (src),y
+            beq     _out
+            eor     (dest),y
+            beq     _loop
+_out        rts            
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CBM stuff below ... move to another file.
@@ -133,7 +137,41 @@ start
             jsr     restor
             jsr     SCINIT
             jsr     IOINIT
-            jmp     (basic)
+            jmp     chain
+
+chain
+            ldx     #0
+_loop       
+          ; Point src and dest at the expected signature and offset
+            lda     _table,x
+            sta     src+0
+            inx
+            lda     _table,x
+            sta     src+1
+            inx
+            lda     _table,x
+            sta     dest+0
+            inx
+            lda     _table,x
+            sta     dest+1
+            inx
+            
+          ; Chain on signature match.
+            jsr     strcmp
+            bne     _next
+            jmp     (_table,x)
+_next       inx
+            inx
+            bra     _loop            
+_table      
+            .word   cbm_bytes, $a004, cbm_start ; Check for CBM BASIC
+            .word   cli_bytes, $e000, cli_start ; Always last
+
+cbm_bytes   .null   "CBMBASIC"
+cbm_start   jmp     (basic)
+
+cli_bytes   .null   ""          ; Fall-through match.
+cli_start   jmp     shell.start
 
 
 vectors     .struct
