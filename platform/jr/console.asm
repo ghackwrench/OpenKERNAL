@@ -44,8 +44,8 @@ fcb         .macro  ; For importing TinyCore fonts.
 
 font        
             .fill       20*8,0
-            .include    "hardware/8x8.fcb"
-            ;.binary    "Bm437_PhoenixEGA_8x8.bin", 160, $400
+            ;.include    "hardware/8x8.fcb"
+            .binary    "Bm437_PhoenixEGA_8x8.bin", 160, $400
 
 
 init
@@ -139,7 +139,7 @@ _install
             lda     #>(128 * 8)
             sta     count+1
             
-            jsr     long_move
+            jsr     long_move1
 
           ; Install upper half
 
@@ -185,6 +185,36 @@ _small      cpy     count
             plx
             rts
 
+long_move1
+            phx
+            phy
+
+            ldy     #0
+            ldx     count+1
+            beq     _small
+
+_large      lda     (src),y
+            lsr     a
+            sta     (dest),y
+            iny
+            bne     _large
+            inc     src+1
+            inc     dest+1
+            dex
+            bne     _large
+            bra     _small
+
+_loop       lda     (src),y
+            eor     #$ff
+            sta     (dest),y
+
+            iny
+_small      cpy     count
+            bne     _loop
+
+            ply
+            plx
+            rts
 long_move2            
             phx
             phy
@@ -194,6 +224,7 @@ long_move2
             beq     _small
 
 _large      lda     (src),y
+            lsr     a
             eor     #$ff
             sta     (dest),y
             iny
