@@ -254,13 +254,11 @@ cls
             phy
 
             lda     #2
-            sta     shadow1
             sta     $1
             lda     #' '
             jsr     _fill
 
             lda     #3
-            sta     shadow1
             sta     $1    
             lda     color
             jsr     _fill
@@ -321,7 +319,6 @@ cursor
         ldy     cur_x
 
         ldx     #3      ; color memory
-        stx     platform.shadow1
         stx     $1
         lda     (ptr),y
 .if false
@@ -336,16 +333,13 @@ cursor
         rol     scratch
         ora     scratch
 .endif        
-        stz     platform.shadow1
         stz     $1
         sta     VKY_TXT_CURSOR_COLR_REG
 
         ldx     #2      ; text memory
-        stx     platform.shadow1
         stx     $1
         lda     (ptr),y
         eor     #$80
-        stz     platform.shadow1
         stz     $1
         sta     VKY_TXT_CURSOR_CHAR_REG
 
@@ -362,7 +356,6 @@ cursor
         stz     VKY_TXT_START_ADD_PTR
 
         ldx     #2
-        stx     platform.shadow1
         stx     $1
 
         rts
@@ -374,11 +367,10 @@ putc
         phx
         phy
 
-        ldx     shadow1
+        ldx     $1
         phx
 
         ldx     #2
-        stx     shadow1
         stx     $1
 
         jsr     _putc
@@ -387,7 +379,6 @@ putc
         jsr     gotoxy
 
         plx
-        stx     shadow1
         stx     $1
 
         ply

@@ -129,7 +129,6 @@ start
   stz   input
         
   lda #2
-  sta platform.shadow1
   sta $1
   
             jsr     ramtas

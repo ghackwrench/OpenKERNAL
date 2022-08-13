@@ -491,10 +491,14 @@ _next
         bra     _okay
 
 _getchar
-   lda #2
-   sta platform.shadow1
-   sta $1
+        phx
+        ldx     $1  ; TODO: move to console driver.
+        lda     #2
+        sta     $1
         lda     (platform.console.ptr),y
+        stx     $1
+        plx
+        
         inc     scrape_x
         cmp     #32
         bcc     _next   ; can't generate these
@@ -507,12 +511,8 @@ _getchar
         cmp     #'a'
         bcc     _okay
         eor     #$20    ; toupper
-        ;sta (platform.console.ptr),y
 _okay   
         clc
-   stz platform.shadow1
-   stz $1
-   
         rts
 
 _quote  

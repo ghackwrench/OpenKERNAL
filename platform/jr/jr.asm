@@ -21,8 +21,6 @@ iomap       .byte       ?       ; Holds $1 during interrupt processing.
             .send            
 
             .section    kmem
-shadow0     .byte       ?
-shadow1     .byte       ?
 nmi_flag    .byte       ?
             .send
 
@@ -122,15 +120,6 @@ tick_init
 
 hw_nmi: 
         stz     nmi_flag
-   pha
-   lda #2
-   sta $1
-   lda $c002
-   inc a
-   sta $c002
-   lda shadow1
-   sta $1
-   pla
         rti
 
 hw_irq:
