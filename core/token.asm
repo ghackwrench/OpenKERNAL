@@ -25,11 +25,10 @@ entries     .byte       ?       ; free list
 
 init
             stz     entries
-            lda     #0
-            bra     _next   ; Reserve the first one.
+            lda     #<tokens_start
 _loop       tay
             jsr     free
-_next       clc
+            clc
             adc     #entry.size
             bne     _loop
             

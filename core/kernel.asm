@@ -17,19 +17,20 @@ DP          .dsection   dp
 Stack       .fill       $100
 
 *           = $0200     ; BASIC, some KERNAL
-            .fill       $90     ; BASIC
+Tokens      .fill       $90     ; BASIC
 p2end            
+tokens_start
             .cerror * > $02ff, "Out of kmem space."
 
 *           = $0300     
             .fill   $34         ; Shared vectors
 p3end       
-KBUF        .dsection   kbuf    ; kernal
-KMEM        .dsection   kmem    ; KERNAL 
             .cerror * > $03ff, "Out of kbuf space."
 
 *           = $0400     ; Device tables (from the TinyCore kernel)
             .dsection   kpages
+KBUF        .dsection   kbuf    ; kernal
+KMEM        .dsection   kmem    ; KERNAL 
 
 
 free_mem    = $800  ; Traditional start.
@@ -61,7 +62,6 @@ kernel      .namespace
 frame
 Devices     .fill       256
 DevState    .fill       256
-Tokens      .fill       256
             
 ;            .fill       256     ; Something goes wonky otherwise...
             .send            
