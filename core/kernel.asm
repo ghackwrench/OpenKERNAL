@@ -69,8 +69,6 @@ DevState    .fill       256
             .namespace  kernel
 
             .section    dp
-tmp_x       .byte   ?
-tmp2        .byte   ?
 ticks       .word   ?
 src         .word   ?   ; src ptr for copy operations.
             .send

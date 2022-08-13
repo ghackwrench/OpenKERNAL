@@ -34,25 +34,25 @@ ivec_size   =   ivec_end - ivec_start
            
 restor
             pha
-            stx     tmp_x
+            phx
             ldx     #0
 _loop       lda     ivec_start,x
             sta     $314,x
             inx
             cmp     #ivec_size
             bne     _loop
-            ldx     tmp_x
+            plx
             pla
             rts
 
 vector
-            stx     tmp2+0
-            sty     tmp2+1
+            stx     src+0
+            sty     src+1
 
             ldy     #0
             bcs     _out      
         
-_in         lda     (tmp2),y
+_in         lda     (src),y
             sta     $314,y
             iny
             cpy     #ivec_size
@@ -60,7 +60,7 @@ _in         lda     (tmp2),y
             rts
             
 _out        lda     $314,y
-            sta     (tmp2),y
+            sta     (src),y
             iny
             cpy     #ivec_size
             bne     _out
