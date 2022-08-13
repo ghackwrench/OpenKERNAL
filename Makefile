@@ -29,9 +29,9 @@ CORE	= \
 	core/iec.asm \
 	core/io.asm \
 	core/rtc.asm \
+	core/sys.asm \
 	core/keyboard.asm \
 	core/video.asm \
-	core/vectors.asm \
 	core/device.asm \
 	core/token.asm \
 	core/keyboard.asm \

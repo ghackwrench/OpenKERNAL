@@ -7,6 +7,8 @@
             .namespace  kernel
             .section    kernel
 
+scinit
+            jmp     platform.console.init
 
 screen
             ldx     #platform.console.COLS

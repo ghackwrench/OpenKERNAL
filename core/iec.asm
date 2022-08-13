@@ -7,5 +7,25 @@
             .namespace  kernel
             .section    kernel
 
+settmo
+            sta     iec_timeout
+            rts
+            
+iecin
+iecout
+untalk
+unlstn
+listen
+talk
+            sec
+            rts
+            
+lstnsa
+talksa
+            sec
+            rts
+            
+
+
             .send
             .endn

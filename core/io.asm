@@ -599,6 +599,13 @@ _next       pla
             ply
             rts
 
+    
+load
+save
+    sec
+    rts
+
+
             .send
             .endn
             .endn

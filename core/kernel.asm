@@ -136,186 +136,78 @@ start
             jsr     SCINIT
             jsr     IOINIT
             jmp     (basic)
+
+
+vectors     .struct
+SCINIT      jmp     scinit
+IOINIT      jmp     io.ioinit
+RAMTAS      jmp     ramtas
+RESTOR      jmp     restor
+VECTOR      jmp     vector
+SETMSG      jmp     setmsg
+LSTNSA      jmp     lstnsa
+TALKSA      jmp     talksa
+MEMBOT      jmp     membot
+MEMTOP      jmp     memtop
+SCNKEY      jmp     scnkey
+SETTMO      jmp     settmo
+IECIN       jmp     iecin
+IECOUT      jmp     iecout
+UNTALK      jmp     untalk
+UNLSTN      jmp     unlstn
+LISTEN      jmp     listen
+TALK        jmp     talk
+READST      jmp     io.readst
+SETLFS      jmp     io.setlfs
+SETNAM      jmp     io.setnam
+OPEN        jmp     io.open
+CLOSE       jmp     io.close
+CHKIN       jmp     io.chkin
+CHKOUT      jmp     io.chkout
+CLRCHN      jmp     io.clrchn
+CHRIN       jmp     chrin
+CHROUT      jmp     chrout
+LOAD        jmp     io.load
+SAVE        jmp     io.save
+SETTIM      jmp     settim
+RDTIM       jmp     rdtim
+STOP        jmp     stop
+GETIN       jmp     io.getin
+CLALL       jmp     io.clall
+UDTIM       jmp     udtim
+SCREEN      jmp     screen
+PLOT        jmp     plot
+IOBASE      jmp     iobase
+            .ends
+
+
             
 
 ivec_start
             .word   irq
             .word   break
             .word   nmi
-            .word   open     
-            .word   close
-            .word   chkin
-            .word   chkout
-            .word   clrchn
+            .word   io.open     
+            .word   io.close
+            .word   io.chkin
+            .word   io.chkout
+            .word   io.clrchn
             .word   chrin
             .word   chrout
             .word   stop
-            .word   getin
-            .word   clall
+            .word   io.getin
+            .word   io.clall
             .word   user
-            .word   load
-            .word   save
+            .word   io.load
+            .word   io.save
 ivec_end
 ivec_size   =   ivec_end - ivec_start
 
 
 
-stop
-    lda #1
-    clc
-    rts
-
-
-
-scinit
-            jmp     platform.console.init
-
-ioinit      jmp     io.ioinit
-
-ramtas      
-            lda     #0
-            
-            ldx     #2
-_l1         sta     $0,x
-            inx
-            bne     _l1
-            
-            sta     $100
-            sta     $101
-
-_l2         sta     $200,x
-            sta     $300,x
-            inx
-            bne     _l2
-
-            ldx     #0
-            ldy     #>free_mem
-            clc     ; set
-            jsr     memtop
-
-            ldx     #0     
-            ldy     #>basic
-            clc     ; set
-            jsr     membot
-
-            rts
-                        
-restor
-            pha
-            stx     tmp_x
-            ldx     #0
-_loop       lda     ivec_start,x
-            sta     $314,x
-            inx
-            cmp     #ivec_size
-            bne     _loop
-            ldx     tmp_x
-            pla
-            rts
-
-vector
-            stx     tmp2+0
-            sty     tmp2+1
-
-            ldy     #0
-            bcs     _out      
-        
-_in         lda     (tmp2),y
-            sta     $314,y
-            iny
-            cpy     #ivec_size
-            bne     _in
-            rts
-            
-_out        lda     $314,y
-            sta     (tmp2),y
-            iny
-            cpy     #ivec_size
-            bne     _out
-            rts
-
-setmsg
-            sta     msg_switch
-            rts
-            
-lstnsa
-talksa
-            sec
-            rts
-            
-membot
-            bcc     _save
-            
-_load       ldx     mem_end+0
-            ldy     mem_end+1
-            rts
-
-_save       stx     mem_end+0
-            sty     mem_end+1
-            rts
-
-memtop
-            bcc     _save
-
-_load       ldx     mem_start+0
-            ldy     mem_start+1
-            rts
-
-_save       stx     mem_start+0
-            sty     mem_start+1
-            rts
-
-scnkey
-            ; PS2 keyboard is interrupt driven.
-            ; May be used to force a CIA scan.
-            rts
-
-settmo
-            sta     iec_timeout
-            rts
-            
-iecin
-iecout
-untalk
-unlstn
-listen
-talk
-            sec
-            rts
-
-readst      jmp     io.readst
-setlfs      jmp     io.setlfs
-setnam      jmp     io.setnam
-open        jmp     io.open
-close       jmp     io.close
-chkin       jmp     io.chkin
-chkout      jmp     io.chkout
-clrchn      jmp     io.chkin
 chrin       jsr     io.chrin
 chrout      jmp     io.chrout
 
-    
-load
-save
-    sec
-    rts
-
-getin       jmp     io.getin
-clall       jmp     io.clall
-
-.if true
-irq
-break
-nmi
-user
-        sec
-        rts
-.endif
-        
-iobase
-        ldx     #$dc
-        ldy     #$00
-        rts
 
 
 
