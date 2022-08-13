@@ -9,8 +9,13 @@
 
 64TASS	?= 64tass
 
-# Default target
-always: cbm/C256jr.bin
+# Default target.
+# Load at $e000, includes a simple shell.
+always: bin/C256jr.bin
+
+# OpenKERNAL bundled with CBM BASIC V2 (you supply the ROM).
+# Load at $a000, boots to BASIC.
+cbmjr:	cbm/C256jr.bin
 
 clean:
 	rm -f bin/* cbm/*
