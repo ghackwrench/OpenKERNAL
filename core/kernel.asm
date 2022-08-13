@@ -10,23 +10,29 @@
 ;basic      = $0002     ; $02 - $90
 *           = $0090     ; $90 - $fb kernel
 *           = $00a3     ; $90 - $fb kernel
-            .dsection   dp
+DP          .dsection   dp
             .cerror * >= $00fb, "Out of dp space."
 
-Stack       = $0100
-Page2       = $0200     ; BASIC, some KERNAL
-Page3       = $0300     ; BASIC
+*           = $0100     ; Stack
+Stack       .fill       $100
 
-*           = $0400     ; KERNEL    ; TODO: 200, fill 59, ramtas
-KMEM        .dsection   kmem 
-            .cerror * > $04ff, "Out of kmem space."
+*           = $0200     ; BASIC, some KERNAL
+            .fill       $90     ; BASIC
+p2end            
+            .cerror * > $02ff, "Out of kmem space."
 
-*           = $0500     ; Device table (borrowed from the TinyCore kernel)
-            .dsection   kbuf
-            .align      256
+*           = $0300     
+            .fill   $34         ; Shared vectors
+p3end       
+KBUF        .dsection   kbuf    ; kernal
+KMEM        .dsection   kmem    ; KERNAL 
+            .cerror * > $03ff, "Out of kbuf space."
+
+*           = $0400     ; Device tables (from the TinyCore kernel)
             .dsection   kpages
-            .fill       256     ; BASIC...
-free_mem
+
+
+free_mem    = $800  ; Traditional start.
 
 
 

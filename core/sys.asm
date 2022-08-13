@@ -9,20 +9,27 @@
 
 
 ramtas      
-            lda     #0
             
             ldx     #2
-_l1         sta     $0,x
+_11         stz     $0,x
             inx
-            bne     _l1
+            cpx     #<DP        ; Don't clear the kernel's dp.
+            bne     _11
             
-            sta     $100
-            sta     $101
+            stz     $100
+            stz     $101
 
-_l2         sta     $200,x
-            sta     $300,x
+            ldx     #0
+_l2         stz     $200,x
             inx
+            cpx     #<p2end     ; Don't clear the kernel's page 2 memory.
             bne     _l2
+
+            ldx     #0
+_l3         stz     $300,x  
+            inx
+            cpx     #<p3end     ; Don't clear the kernel's page 3 memory
+            bne     _l3
 
             ldx     #0
             ldy     #>free_mem
