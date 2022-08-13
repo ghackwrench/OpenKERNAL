@@ -126,11 +126,8 @@ _msg    .null   "Error"
 basic = $a000
 
 start       
-  stz   input
-        
-  lda #2
-  sta $1
-  
+            stz     $1  ; Default to the sys map.
+
             jsr     ramtas
             jsr     restor
             jsr     SCINIT
@@ -165,8 +162,8 @@ CLOSE       jmp     io.close
 CHKIN       jmp     io.chkin
 CHKOUT      jmp     io.chkout
 CLRCHN      jmp     io.clrchn
-CHRIN       jmp     chrin
-CHROUT      jmp     chrout
+CHRIN       jmp     io.chrin
+CHROUT      jmp     io.chrout
 LOAD        jmp     io.load
 SAVE        jmp     io.save
 SETTIM      jmp     settim
@@ -192,8 +189,8 @@ ivec_start
             .word   io.chkin
             .word   io.chkout
             .word   io.clrchn
-            .word   chrin
-            .word   chrout
+            .word   io.chrin
+            .word   io.chrout
             .word   stop
             .word   io.getin
             .word   io.clall
@@ -202,15 +199,6 @@ ivec_start
             .word   io.save
 ivec_end
 ivec_size   =   ivec_end - ivec_start
-
-
-
-chrin       jsr     io.chrin
-chrout      jmp     io.chrout
-
-
-
-
 
             
             .send

@@ -22,7 +22,6 @@ io_status   .byte       ?       ; status from most recent read/write operation
 scraping    .byte       ?       ; screen scraping bool.
 scrape_x    .byte       ?       ; screen scrape x value.
 quoted      .byte       ?       ; screen scrape inside quotes.
-echo        .byte       ?       ; screen echo enabled.
 
             .send
 
@@ -125,15 +124,8 @@ screen_io
             lda     #0
             clc
             rts
-_write      phx
-            ldx     echo
-            beq     _next
-            jsr     platform.console.putc
-_next       plx
-            cmp     #13
-            bne     _out
-            sta     echo
-_out        clc
+_write      jsr     platform.console.putc
+            clc
             rts
 
 keyboard_open
@@ -307,8 +299,7 @@ _hex    .null "0123456789abcdef"
 ioinit
             stz     scraping    ; Not presently screen scraping.
             stz     quoted      ; Not presently in a quoted string 
-            stz     echo
-            inc     echo        ; Enable console echo
+            stz     input
 
           ; Init (zero) the files table
             ldx     #0
@@ -481,7 +472,6 @@ _key    cmp     #13     ; ENTER
 
 _scrape
         sta     scraping
-        stz     echo
 _next
         ldy     scrape_x
         cpy     platform.console.cur_x
