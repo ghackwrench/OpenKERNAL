@@ -35,6 +35,7 @@ CORE	= \
 	core/device.asm \
 	core/token.asm \
 	core/keyboard.asm \
+	core/vectors.asm \
 
 ####### C256jr ##################################################
 

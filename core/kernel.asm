@@ -178,28 +178,5 @@ IOBASE      jmp     iobase
             .ends
 
 
-            
-
-ivec_start
-            .word   irq
-            .word   break
-            .word   nmi
-            .word   io.open     
-            .word   io.close
-            .word   io.chkin
-            .word   io.chkout
-            .word   io.clrchn
-            .word   io.chrin
-            .word   io.chrout
-            .word   stop
-            .word   io.getin
-            .word   io.clall
-            .word   user
-            .word   io.load
-            .word   io.save
-ivec_end
-ivec_size   =   ivec_end - ivec_start
-
-            
             .send
             .endn

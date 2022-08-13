@@ -7,48 +7,74 @@
             .namespace  kernel
             .section    kernel
             
-vectors     .struct
-SCINIT      jmp     scinit
-IOINIT      jmp     ioinit
-RAMTAS      jmp     ramtas
-RESTOR      jmp     restor
-VECTOR      jmp     vector
-SETMSG      jmp     setmsg
-LSTNSA      jmp     lstnsa
-TALKSA      jmp     talksa
-MEMBOT      jmp     membot
-MEMTOP      jmp     memtop
-SCNKEY      jmp     scnkey
-SETTMO      jmp     settmo
-IECIN       jmp     iecin
-IECOUT      jmp     iecout
-UNTALK      jmp     untalk
-UNLSTN      jmp     unlstn
-LISTEN      jmp     listen
-TALK        jmp     talk
-READST      jmp     readst
-SETLFS      jmp     setlfs
-SETNAM      jmp     setnam
-OPEN        jmp     open
-CLOSE       jmp     close
-CHKIN       jmp     chkin
-CHKOUT      jmp     chkout
-CLRCHN      jmp     clrchn
-CHRIN       jmp     chrin
-CHROUT      jmp     chrout
-LOAD        jmp     load
-SAVE        jmp     save
-SETTIM      jmp     settim
-RDTIM       jmp     rdtim
-STOP        jmp     stop
-GETIN       jmp     getin
-CLALL       jmp     clall
-UDTIM       jmp     udtim
-SCREEN      jmp     screen
-PLOT        jmp     plot
-IOBASE      jmp     iobase
-            .ends
 
+            
+
+ivec_start
+            .word   irq
+            .word   break
+            .word   nmi
+            .word   io.open     
+            .word   io.close
+            .word   io.chkin
+            .word   io.chkout
+            .word   io.clrchn
+            .word   io.chrin
+            .word   io.chrout
+            .word   stop
+            .word   io.getin
+            .word   io.clall
+            .word   user
+            .word   io.load
+            .word   io.save
+ivec_end
+ivec_size   =   ivec_end - ivec_start
+
+            
+           
+restor
+            pha
+            stx     tmp_x
+            ldx     #0
+_loop       lda     ivec_start,x
+            sta     $314,x
+            inx
+            cmp     #ivec_size
+            bne     _loop
+            ldx     tmp_x
+            pla
+            rts
+
+vector
+            stx     tmp2+0
+            sty     tmp2+1
+
+            ldy     #0
+            bcs     _out      
+        
+_in         lda     (tmp2),y
+            sta     $314,y
+            iny
+            cpy     #ivec_size
+            bne     _in
+            rts
+            
+_out        lda     $314,y
+            sta     (tmp2),y
+            iny
+            cpy     #ivec_size
+            bne     _out
+            rts
+
+
+
+irq
+break
+nmi
+user
+        sec
+        rts
+        
 
             .send
             .endn

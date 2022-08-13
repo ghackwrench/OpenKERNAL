@@ -37,42 +37,6 @@ _l2         sta     $200,x
             rts
             
 
-           
-restor
-            pha
-            stx     tmp_x
-            ldx     #0
-_loop       lda     ivec_start,x
-            sta     $314,x
-            inx
-            cmp     #ivec_size
-            bne     _loop
-            ldx     tmp_x
-            pla
-            rts
-
-vector
-            stx     tmp2+0
-            sty     tmp2+1
-
-            ldy     #0
-            bcs     _out      
-        
-_in         lda     (tmp2),y
-            sta     $314,y
-            iny
-            cpy     #ivec_size
-            bne     _in
-            rts
-            
-_out        lda     $314,y
-            sta     (tmp2),y
-            iny
-            cpy     #ivec_size
-            bne     _out
-            rts
-
-
 setmsg
             sta     msg_switch
             rts
@@ -112,13 +76,6 @@ stop
     rts
 
 
-irq
-break
-nmi
-user
-        sec
-        rts
-        
 iobase
         ldx     #$dc
         ldy     #$00
