@@ -25,12 +25,12 @@ tokens_start
 *           = $0300     
             .fill   $34         ; Shared vectors
 p3end       
+KBUF        .dsection   kbuf    ; kernal
+KMEM        .dsection   kmem    ; KERNAL 
             .cerror * > $03ff, "Out of kbuf space."
 
 *           = $0400     ; Device tables (from the TinyCore kernel)
             .dsection   kpages
-KBUF        .dsection   kbuf    ; kernal
-KMEM        .dsection   kmem    ; KERNAL 
 
 
 free_mem    = $800  ; Traditional start.

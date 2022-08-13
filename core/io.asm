@@ -406,7 +406,7 @@ chkout
 _out        ply
             rts
             
-clrchn 
+clrchn ; TODO: not sure how this is /supposed/ to work.
    clc
    rts
             phy
