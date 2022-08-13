@@ -406,7 +406,9 @@ chkout
 _out        ply
             rts
             
-clrchn jmp spin
+clrchn 
+   clc
+   rts
             phy
             
 _stdin      lda     cur_in
@@ -452,12 +454,14 @@ _out
             rts            
 
 screen
+      ; Resume an inprogress screen-scrape 
         lda     scraping
         bne     _next
 
+      ; Begin screen editing
         lda     platform.console.cur_x
-        sta     scrape_x
-        sta     quoted      ; Disables toupper for INPUT.
+        sta     scrape_x    ; Start of input
+        sta     quoted      ; Disables toupper if not at col zero
 
 _read   jsr     kernel.keyboard.deque
         bcc     _key
@@ -471,7 +475,7 @@ _key    cmp     #13     ; ENTER
         bra     _read
 
 _scrape
-        sta     scraping
+        sta     scraping    ; 13 (enter) is non-zero.
 _next
         ldy     scrape_x
         cpy     platform.console.cur_x
@@ -508,18 +512,17 @@ _okay
 
 _quote  
         lda     quoted
-        eor     #$ff
-        sta     quoted
-        lda     #$22     ; quote
-        rts        
-
-
-_done   
+        stz     quoted
+        bne     _ret
+        inc     quoted
+_ret    lda     #$22     ; quote
+        bra     _okay
 
 map     .macro  key, ctrl
         .byte   \key, (\ctrl & 31)
         .endm
 emacs
+        phx
         ldx     #0
 _loop   cmp     _map,x
         beq     _found
@@ -527,8 +530,9 @@ _loop   cmp     _map,x
         inx
         cpx     #_end
         bne     _loop
-        rts
+        bra     _out
 _found  lda     _map+1,x
+_out    plx
         rts
 _map
         .map    HOME,   'a'
