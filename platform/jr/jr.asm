@@ -103,9 +103,11 @@ _out    rts
 tick_init
         ; TODO: allocate the device handle.
 
-        lda     #<kernel.tick
+        jsr     c64kbd.init
+
+        lda     #<tick
         sta     frame+0
-        lda     #>kernel.tick
+        lda     #>tick
         sta     frame+1
 
         lda     #<frame
@@ -117,6 +119,9 @@ tick_init
         
         rts
 
+tick
+        jsr     c64kbd.scan
+        jmp     kernel.tick
 
 hw_nmi: 
         stz     nmi_flag

@@ -23,7 +23,15 @@ _loop       lda     (src),y
             bne     _loop
             inc     src+1
             bra     _loop
-_done       jmp     wreset       
+_done       
+            jsr     keyboard.deque
+            bcc     _report
+            wai
+            bra     _done
+_report     jsr     platform.console.putc
+            bra     _done            
+            
+
 _msg        .text   "OpenKERNAL - a clean-room implementation of the C64 KERNAL ABI",13
             .text   "Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.",13
             .text   "Released under the GPL3 license with the kernel exception:",13

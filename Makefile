@@ -50,6 +50,7 @@ C256JR	= \
 	platform/jr/irq.asm \
 	platform/jr/ps2.asm \
 	platform/jr/console.asm \
+	platform/jr/c64kbd.asm \
 	platform/jr/FPGA/TinyVicky_Def.asm \
 	platform/jr/FPGA/interrupt_def.asm \
 	hardware/hardware.asm \
