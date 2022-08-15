@@ -18,7 +18,7 @@ always: bin/C256jr.bin
 cbmjr:	cbm/C256jr.bin
 
 clean:
-	rm -f bin/* cbm/*
+	rm -f bin/*.bin cbm/*.bin
 	
 deepclean: clean
 	find . -name "*~" -exec rm {} \;
