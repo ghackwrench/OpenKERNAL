@@ -36,7 +36,6 @@ init:
 
         lda #$00    ; CIA#1 port B = inputs
         sta DDRB   
-        sta PRA     ; Pull all keys low for quick checks for keys
 
       ; Init the roll-table
         lda     #$ff    ; no key grounded
@@ -51,8 +50,9 @@ scan
         lda     #$7f
         ldx     #0
         
-_loop   sta     mask
+_loop   
         sta     PRA
+        sta     mask        
 
         lda     PRB
         sta     hold
@@ -133,7 +133,7 @@ _report
 
         bbr    2,state+0,_ctrl   ; CTRL
         bbr    4,state+1,_shift  ; RSHIFT
-        bbr    7,state+7,_shift  ; LSHIFT
+        bbr    7,state+6,_shift  ; LSHIFT
 
 _alt    bbs    5,state+0,_queue  ; C= (ALT)
         ora     #$80
