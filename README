@@ -2,7 +2,7 @@ OpenKERNAL - a clean-room implementation of the C64's KERNAL ABI for the w65c02.
 
 OpenKERNAL is a clean-room implementation of the Commodore 64 KERNAL ABI
 (Application Binary Interface) as documented in the Commodore 64 Programmer's
-Reference. OpenKERNAL allows programs that only rely on the KERNAL ABI to run
+Reference. OpenKERNAL allows programs which rely only on the KERNAL ABI to run
 on a variety of hardware platforms. This includes, but is not limited to, CBM
 BASIC V2, which is of nostalgic value to many C64 owners. 
 
@@ -20,7 +20,9 @@ Building
 To build, you should only need GNU Make and 64tass.
 
 The default target (bin/C256jr.bin) will build an unbundled kernel for
-the C256 Foenix Jr.  This kernel should be loaded at $e000.
+the C256 Foenix Jr.  This kernel will normally be loaded at $e000, but
+see the README file for your platform to confirm.  The C256 Jr. build
+loads at $c000.
 
 
 Bundling with CBM BASIC

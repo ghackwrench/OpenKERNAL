@@ -23,6 +23,9 @@ TEXT_LUT_BG	 = $D840
 TEXT_MEM         = $C000 	; IO Page 2
 COLOR_MEM        = $C000 	; IO Page 3
 
+* = $c000
+font        .binary    "Bm437_PhoenixEGA_8x8.bin", 0, $400
+
             .section    dp
 src         .word   ?
 dest        .word   ?
@@ -37,16 +40,6 @@ scratch     .byte   ?
 
 
             .section    kernel
-
-fcb         .macro  ; For importing TinyCore fonts.
-            .byte   \@
-            .endm
-
-font        
-            .fill       20*8,0
-            ;.include    "hardware/8x8.fcb"
-            .binary    "Bm437_PhoenixEGA_8x8.bin", 160, $400
-
 
 init
             jsr     TinyVky_Init
@@ -124,36 +117,34 @@ init_font:
             rts
             
 _install
-          ; Install lower half
+            phx
+            phy
 
-            lda     #<font
-            sta     src+0
-            lda     #>font
-            sta     src+1
-
-            lda     #$c0
-            sta     dest+1
+            stz     src+0
             stz     dest+0
-
-            stz     count
-            lda     #>(128 * 8)
-            sta     count+1
-            
-            jsr     long_move1
-
-          ; Install upper half
-
-            lda     #<font
-            sta     src+0
-            lda     #>font
+            lda     #$c0
             sta     src+1
-
-            stz     count
-            lda     #>(128 * 8)
-            sta     count+1
+            lda     #$c4
+            sta     dest+1
             
-            jsr     long_move2
+            ldx     #4
+            ldy     #0
+_loop       
+            smb     2,$1
+            lda     (src),y            
+            rmb     2,$1
+            sta     (src),y
+            eor     #$ff
+            sta     (dest),y
+            iny
+            bne     _loop
+            inc     src+1
+            inc     dest+1
+            dex
+            bne     _loop                       
 
+            ply
+            plx
             rts
 
 long_move            
@@ -184,69 +175,6 @@ _small      cpy     count
             ply
             plx
             rts
-
-long_move1
-            phx
-            phy
-
-            ldy     #0
-            ldx     count+1
-            beq     _small
-
-_large      lda     (src),y
-            lsr     a
-            sta     (dest),y
-            iny
-            bne     _large
-            inc     src+1
-            inc     dest+1
-            dex
-            bne     _large
-            bra     _small
-
-_loop       lda     (src),y
-            eor     #$ff
-            sta     (dest),y
-
-            iny
-_small      cpy     count
-            bne     _loop
-
-            ply
-            plx
-            rts
-long_move2            
-            phx
-            phy
-
-            ldy     #0
-            ldx     count+1
-            beq     _small
-
-_large      lda     (src),y
-            lsr     a
-            eor     #$ff
-            sta     (dest),y
-            iny
-            bne     _large
-            inc     src+1
-            inc     dest+1
-            dex
-            bne     _large
-            bra     _small
-
-_loop       lda     (src),y
-            eor     #$ff
-            sta     (dest),y
-
-            iny
-_small      cpy     count
-            bne     _loop
-
-            ply
-            plx
-            rts
-
 
 cls
             pha
