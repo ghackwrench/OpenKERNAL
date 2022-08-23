@@ -79,10 +79,22 @@ mem_end     .word       ?
 msg_switch  .byte       ?
 iec_timeout .byte       ?
 current_dev .byte       ?
-input       .byte       ?
             .send
 
             .section    kernel
+            
+copyright
+            .text   "OpenKERNAL - a clean-room implementation of the C64 KERNAL ABI",13
+            .text   "Copyright 2022 Jessie Oberreuter <Gadget@HackwrenchLabs.com>.",13
+            .text   "Released under the GPL3 license with the kernel exception:",13
+            .text   "applications which simply use the ABI are not 'derived works'.", 13
+            .byte   0
+            
+
+            .text   13
+            .text   "There will be a simple shell here soon.", 13
+            .byte   0
+
             
 thread      .namespace  ; For devices borrowed from the TinyCore kernel.
 yield       wai
@@ -101,6 +113,22 @@ tick
         bne     _end
         inc     kernel.ticks+1
 _end    rts
+
+
+banner
+            lda     #<copyright
+            sta     src
+            lda     #>copyright
+            sta     src+1
+            ldy     #0
+_loop       lda     (src),y
+            beq     _done
+            jsr     platform.console.putc
+            iny
+            bne     _loop
+            inc     src+1
+            bra     _loop
+_done       rts
 
 error
         lda     #<_msg

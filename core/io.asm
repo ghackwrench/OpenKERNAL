@@ -5,7 +5,7 @@
             .cpu    "w65c02"
 
             .namespace  kernel
-io          .namespace
+            .namespace  io
 
             .section    dp
 fname       .word       ?       ; file name pointer
@@ -58,115 +58,6 @@ spin
         sta $c000
         jmp spin
 
-mkdev       .macro      DEV
-            .word       \1_open, \1_stat, \1_io, \1_close
-            .endm
-
-devices
-            .mkdev      keyboard
-            .mkdev      missing     ; dataset
-            .mkdev      missing     ; rs232
-            .mkdev      screen
-            .mkdev      missing     ; printer0
-            .mkdev      missing     ; printer1
-            .mkdev      missing     ; plotter0
-            .mkdev      missing     ; plotter1
-            .mkdev      missing     ; disk
-
-device      .namespace
-            .virtual    devices
-open        .word       ?
-stat        .word       ?
-io          .word       ?
-close       .word       ?
-            .endv
-            .endn
-
-open_x      jmp     (device.open,x)
-read_x      clc
-            jmp     (device.io,x)
-write_x     sec
-            jmp     (device.io,x)            
-close_x     jmp     (device.close,x)
-
-missing_open
-missing_stat
-missing_io
-missing_close
-            lda     #DEVICE_NOT_PRESENT
-            jmp     error
-
-simple_open
-            lda     #1  ; open
-            sta     file.state,y
-            clc
-            rts
-            
-simple_close
-            lda     #0
-            sta     file.state,y
-            clc
-            rts
-
-screen_open 
-            jmp     simple_open
-
-screen_close
-            jmp     simple_close
-
-screen_stat
-            lda     #0
-            clc
-            rts            
-            
-screen_io
-            bcs     _write
-            lda     #0
-            clc
-            rts
-_write      jsr     platform.console.putc
-            clc
-            rts
-
-keyboard_open
-            jmp     simple_open
-            
-keyboard_close
-            jmp     simple_close
-            
-keyboard_stat
-            lda     #0
-            clc
-            rts            
-            
-keyboard_io
-            bcs     _write
-        phy
-        ldy input
-        lda _input,y
-        beq _out
-        inc input
-_out    ply
-        ora #0
-        clc
-        rts
-_write      lda     #NOT_OUTPUT_FILE
-            jmp     error            
-
-_input
-            .enc        "none"
-;            .text       "5 PRINT CHR$(211)",$0d
-            .text       "10 FOR Y = 0 TO 15", $0d
-            .text       "20 FOR X = 0 TO 15", $0d
-            .text       "30 POKE 49152+Y*80+X,Y*16+X", $0d
-            .text       "40 NEXT X: NEXT Y", $0d   
-            .text       "50 GOTO 50", $0d         
-
-;            .text       "10 PRINT CHR$(205.5+RND(1)); : GOTO 10", $0d
-;            .text       "10 POKE 49152,77", $0d
-            .text       "LIST",$0d
-;            .text       "RUN",$0d
-            .byte       0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +97,6 @@ link:
     ; IN: A = logical file #
     ; SUCCESS:
     ;   Carry clear
-    ;   X->device entry
     ;   Y->file entry
     ; FAIL:
     ;   Carry set
@@ -299,7 +189,6 @@ _hex    .null "0123456789abcdef"
 ioinit
             stz     scraping    ; Not presently screen scraping.
             stz     quoted      ; Not presently in a quoted string 
-            stz     input
 
           ; Init (zero) the files table
             ldx     #0

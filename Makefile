@@ -33,6 +33,9 @@ CORE	= \
 	core/kernel.asm \
 	core/iec.asm \
 	core/io.asm \
+	core/dev.asm \
+	core/dev_screen.asm \
+	core/dev_keyboard.asm \
 	core/rtc.asm \
 	core/sys.asm \
 	core/keyboard.asm \
