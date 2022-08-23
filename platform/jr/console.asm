@@ -133,6 +133,7 @@ _loop
             smb     2,$1
             lda     (src),y            
             rmb     2,$1
+            lsr     a           ; Jr is dropping the first pixel.
             sta     (src),y
             eor     #$ff
             sta     (dest),y
