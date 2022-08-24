@@ -224,6 +224,9 @@ _out
 _fname      .null   "$"            
             
 list
+            lda     #13
+            jsr     platform.console.putc
+
             phx
             phy
 
@@ -256,8 +259,14 @@ _line
 _loop       
             jsr     _fetch
             beq     _eol
+            
+            cmp     #32
+            bcc     _fill
+            cmp     #128
+            bcc     _putc
+_fill       lda     #' '
           ; Check for a token...
-            jsr     platform.console.putc
+_putc       jsr     platform.console.putc
             bra     _loop
             
 _eol        lda     #13

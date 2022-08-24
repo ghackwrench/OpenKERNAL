@@ -26,6 +26,7 @@ prompt      .text   13,"READY",13,0
 dir         .null   "DIR"
 stat        .null   "STAT"
 rds         .null   "RDS"
+cls         .null   "CLS"
             .endn
 
 
@@ -84,6 +85,7 @@ _table
             .word   str.dir,    dir
             .word   str.stat,   my_status
             .word   str.rds,    Read_Drive_Status
+            .word   str.cls,    cls
             .byte   0           
 
 strcmp
@@ -99,6 +101,8 @@ _loop
             sec
 _out        rts            
 
+cls         lda     #12
+            jmp     putc
 
 putc
     ; IN: A = character code
