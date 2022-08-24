@@ -5,6 +5,11 @@
             .cpu    "w65c02"
 
             .namespace  kernel
+
+            .section    dp
+printing    .byte       ?
+            .send            
+
             .section    kernel
 
 settmo
@@ -245,7 +250,8 @@ _line
             sta     tos_h
             
           ; Print the line number
-          
+            jsr     print_number          
+
           ; Print the rest of the line
 _loop       
             jsr     _fetch
@@ -272,6 +278,69 @@ _done
             plx
             clc
             rts
+
+print_number
+            phx
+            phy
+
+            stz     printing
+            ldx     #0      ; Not yet printing
+            ldy     #0
+_loop       jsr     _cmp
+            bcc     _print
+            inc     printing
+            inx
+            jsr     _sub
+            bra     _loop
+_print      lda     printing
+            beq     _next
+
+            txa
+            clc
+            adc     #'0'
+            jsr     platform.console.putc
+            ldx     #0
+_next
+            iny
+            iny
+            cpy     #10
+            bne     _loop
+
+            lda     printing
+            bne     _done
+            lda     #'0'
+            jsr     platform.console.putc
+            
+_done
+            lda     #' '
+            jsr     platform.console.putc
+            ply
+            plx
+            clc
+            rts            
+_cmp
+            lda     tos_h
+            cmp     _table+1,y
+            bcc     _out        ; MSB is lower
+            bne     _out        ; MSB is higher
+            lda     tos_l
+            cmp     _table+0,y  ; Result is LSB compare
+_out        rts            
+
+_sub        
+            sec
+            lda     tos_l
+            sbc     _table+0,y
+            sta     tos_l
+            lda     tos_h
+            sbc     _table+1,y
+            sta     tos_h
+            rts
+           
+            
+_table
+            .word   10000, 1000, 100, 10, 1
+
             
 load
     ; IN:   src points to the file name
