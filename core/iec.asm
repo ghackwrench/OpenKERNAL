@@ -17,19 +17,62 @@ settmo
             rts
             
 iecin
+
+
 iecout
+            sta    TALKER_DTA
+            rts 
+
 untalk
+            lda     #$5f
+            jmp     send_talker_cmd
+            rts
+
 unlstn
-listen
+            lda     #$3f
+            jmp     send_talker_cmd
+
 talk
-            sec
-            rts
+            cmp     #32
+            bcs     _out
+            ora     #$40
+            jmp     send_talker_cmd
+_out        rts            
             
-lstnsa
+listen
+            cmp     #32
+            bcs     _out
+            ora     #$20
+            jmp     send_talker_cmd
+_out        rts            
+
 talksa
-            sec
+lstnsa
+    ; These two routines are nominally separate to hint the kernel
+    ; about what the bus is expected to do.  On the C256 Jr., the
+    ; state machine in the FPGA automatically handles both cases.
+            cmp     #32
+            bcs     _out
+            ora     #$60
+            jmp     send_talker_cmd
+_out        rts            
+
+
+send_talker_cmd
+            phx
+            ldx     $1
+            stz     $1
+            cmp     #$3f
+            beq     _last
+            cmp     #$5f
+            beq     _last
+            sta     TALKER_CMD
+_done       stx     $1
+            plx
+            clc
             rts
-            
+_last       sta     TALKER_CMD_LAST
+            bra     _done
 
 
 ; IEC
@@ -178,11 +221,19 @@ send_str
             phy
 
             lda     (src)
+   smb 1,$1
+   ;sta $c000
+   stz $1
             tax
             ldy     #1
 _loop
             lda     (src),y
             beq     _done
+            cmp     #$22    ; end quote
+            beq     _done
+   smb 1,$1
+   ;sta $c000,y
+   stz $1
             stx     TALKER_DTA
             tax
             iny
@@ -356,6 +407,11 @@ load
     ;       Y = sub-device (0 implies dest = load address)
             
             stz     $1
+  smb 1,$1
+  tya
+  ora #48
+  ;sta $c000+80
+  stz $1
 
             ;IEC Test 
             ; Send the command
@@ -376,8 +432,6 @@ load
 
           ; go read the data 
             jsr read_data
-            sty size+0
-            sta size+1
 
             lda #$5F
             sta TALKER_CMD_LAST
@@ -389,6 +443,8 @@ load
             sta TALKER_CMD
             lda #$3F
             sta TALKER_CMD_LAST
+
+            clc
             rts
             
 read_data
@@ -411,20 +467,15 @@ read_data
             sta     dest+1
 
 _read       
-            ldx     #0            
-            ldy     #0
 
 _loop       jsr     read_byte
             smb     1,$1
-            sta     (dest),y
+            sta     (dest)
             stz     $1
-            iny
+            inc     dest
             bne     _next
-            inx
             inc     dest+1
 _next       bcc     _loop
-_done
-            txa
             clc
 _out
             plx

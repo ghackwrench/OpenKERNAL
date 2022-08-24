@@ -8,6 +8,9 @@
 *           = $a000     ; CBM BASIC starts here 
             .binary     basic, $0, $2000
 
+*           = $c000
+            .binary     kernel, $0000, $2000    ; Kernel from $c000-$e000
+
 *           = $e000     ; CBM BASIC continues here
-            .binary     basic, $2000, $0500 ; CBM Basic eats into the kernel.
-            .binary     kernel, $0500       ; Kernel from $e500 to end.
+            .binary     basic, $2000, $0500     ; CBM Basic eats into the kernel.
+            .binary     kernel, $2500           ; Kernel from $e500 to end.

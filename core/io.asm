@@ -53,10 +53,13 @@ ILLEGAL_DEVICE_NUMBER   =   9
             .section    kernel
 
 spin
+        lda #2
+        sta $1
+_loop        
         lda $c000
         inc a
         sta $c000
-        jmp spin
+        bra _loop
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,7 +223,7 @@ reopen
             rts
           
 
-readst jmp spin
+readst 
             lda     io_last
             lda #0
             rts
@@ -484,6 +487,45 @@ _next       pla
 
     
 load
+
+            lda     fname+0
+            sta     src+0
+            lda     fname+1
+            sta     src+1
+
+            lda     cur_addr
+            bne     _ready
+            stx     dest+0
+            sty     dest+1
+
+_ready
+            ldy     fname_len
+            beq     _error
+            lda     (fname),y
+            pha
+            lda     #0
+            sta     (fname),y
+
+            ldy     cur_addr
+            beq     _load
+            ldy     #1     
+_load
+            jsr     kernel.load     
+
+            pla
+            ldy     fname_len
+            sta     (fname),y
+
+            ldx     dest+0
+            ldy     dest+1
+            clc
+            rts
+                        
+_error
+            lda     #8  ; Missing file name
+            sec
+            rts
+
 save
     sec
     rts
