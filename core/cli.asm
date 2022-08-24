@@ -59,7 +59,7 @@ _loop       phx
             inx
             cmp     #13
             bne     _loop
-            rts
+            jmp     platform.console.putc
 
 do_cmd
             clc

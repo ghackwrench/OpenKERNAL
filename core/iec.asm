@@ -222,43 +222,52 @@ list
             phx
             phy
 
-            lda     #2
-            sta     $1
+            ldx     #0  ; count MSB
+            ldy     #0  ; count LSB
 
             lda     #<$801
             sta     src+0
             lda     #>$801
             sta     src+1
 
-            lda     #<$c000+800
-            sta     dest+0
-            lda     #>$c000+800
-            sta     dest+1
-            
-            ldy     #0
-            ldx     size+1
-_outer      
-            beq     _last
-_bulk       
-            lda     (src),y
-            sta     (dest),y
-            iny
-            bne     _bulk
-            inc     src
-            ;inc     dest
-            dex
-            bra     _outer            
-
-_last
-            cpy     size+1
+_line       
+          ; File ends when the would-be next address is zero.
+            jsr     _fetch
+            sta     tos_l       ; tmp
+            jsr     _fetch
+            ora     tos_l
             beq     _done
+
+          ; Fetch the line number
+            jsr     _fetch
+            sta     tos_l
+            jsr     _fetch          
+            sta     tos_h
+            
+          ; Print the line number
+          
+          ; Print the rest of the line
+_loop       
+            jsr     _fetch
+            beq     _eol
+          ; Check for a token...
+            jsr     platform.console.putc
+            bra     _loop
+            
+_eol        lda     #13
+            jsr     platform.console.putc
+            bra     _line
+                        
+_fetch
             lda     (src),y
-            sta     (dest),y
             iny
-            bra     _last
+            bne     _fetched
+            inc     src+1
+_fetched
+            ora     #0
+            rts  
             
 _done       
-            stz     $1
             ply
             plx
             clc
@@ -328,15 +337,14 @@ _read
             ldy     #0
 
 _loop       jsr     read_byte
-            bcs     _done
             smb     1,$1
             sta     (dest),y
             stz     $1
             iny
-            bne     _loop
+            bne     _next
             inx
             inc     dest+1
-            bra     _loop
+_next       bcc     _loop
 _done
             txa
             clc

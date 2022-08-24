@@ -71,6 +71,8 @@ ticks       .word   ?
 src         .word   ?   ; src ptr for copy operations.
 dest        .word   ?   ; dest ptr for copy operations.
 size        .word   ?   ; size of data at dest.
+tos_l       .byte   ?   ; For BCD conversions
+tos_h       .byte   ?
             .send
 
 
