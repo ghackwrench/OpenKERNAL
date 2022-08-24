@@ -22,8 +22,10 @@ str_ptr     .word       ?
 strings:
 str         .namespace
 unknown     .text   "?", 13, 0
-prompt      .text   "READY",13,0
+prompt      .text   13,"READY",13,0
 dir         .null   "DIR"
+stat        .null   "STAT"
+rds         .null   "RDS"
             .endn
 
 
@@ -35,8 +37,6 @@ start
             bra     shell
 
 shell
-            lda     #13
-            jsr     putc
             jsr     prompt
 _loop       jsr     get_cmd
             jsr     do_cmd
@@ -70,15 +70,20 @@ _loop       ldy     _table,x
             inx
             jsr     strcmp
             bcs     _next
-            jmp     (_table,x)
+            jsr     _call
+            jmp     prompt
 _next
             inx
             inx
             bra     _loop
 _out                    
             rts
+_call
+            jmp     (_table,x)
 _table
-            .word   str.dir, cmd_dir
+            .word   str.dir,    dir
+            .word   str.stat,   my_status
+            .word   str.rds,    Read_Drive_Status
             .byte   0           
 
 strcmp
@@ -94,12 +99,6 @@ _loop
             sec
 _out        rts            
 
-
-cmd_dir
-            ;jsr     test_IEC
-            ;jsr     status
-            jsr Read_Dir
-            jmp     prompt
 
 putc
     ; IN: A = character code

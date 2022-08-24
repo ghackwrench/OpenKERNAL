@@ -110,6 +110,30 @@ status
             sta TALKER_CMD_LAST
             rts
 
+my_status
+            stz $1
+
+            lda #$48
+            sta TALKER_CMD          ; Talk 8 (device)
+            lda #$6F
+            sta TALKER_CMD          ; Reopen channel 15
+
+            jsr read_data
+
+            lda #$5F                ; Untalk channel 15
+            sta TALKER_CMD_LAST
+
+            lda #$3F                ; Unlisten all devices (until atn)
+            sta TALKER_CMD_LAST
+ rts
+
+
+            ;sta TALKER_CMD_LAST
+
+
+            rts
+
+
 test_IEC
             stz     $1
 
@@ -143,24 +167,166 @@ test_IEC
             lda #$3F
             sta TALKER_CMD_LAST
             rts
+
+send_str
+            phx
+            phy
+
+            lda     (src)
+            tax
+            ldy     #1
+_loop
+            lda     (src),y
+            beq     _done
+            stx     TALKER_DTA
+            tax
+            iny
+            bra     _loop
+
+_done       stx     TALKER_DTA_LAST
+            clc
             
-read_data
+            ply
+            plx
+            rts
+
+dir
+            phy
+
+          ; Point 'src' at the file name ("$").
+            lda     #<_fname
+            sta     src+0
+            lda     #>_fname
+            sta     src+1
+
+          ; Load the data to $801
+            ldy     #0      ; Use write to address in 'dest'
             lda     #<$801
             sta     dest+0
             lda     #>$801
             sta     dest+1
+            
+          ; Load the data
+            jsr     load
+            bcs     _out
+            
+          ; Show the data
+            jsr     list
+            
+_out
+            ply
+            rts
+_fname      .null   "$"            
+            
+list
+            phx
+            phy
 
-            lda     #<$c000
+            lda     #2
+            sta     $1
+
+            lda     #<$801
+            sta     src+0
+            lda     #>$801
+            sta     src+1
+
+            lda     #<$c000+800
             sta     dest+0
-            lda     #>$c000
+            lda     #>$c000+800
+            sta     dest+1
+            
+            ldy     #0
+            ldx     size+1
+_outer      
+            beq     _last
+_bulk       
+            lda     (src),y
+            sta     (dest),y
+            iny
+            bne     _bulk
+            inc     src
+            ;inc     dest
+            dex
+            bra     _outer            
+
+_last
+            cpy     size+1
+            beq     _done
+            lda     (src),y
+            sta     (dest),y
+            iny
+            bra     _last
+            
+_done       
+            stz     $1
+            ply
+            plx
+            clc
+            rts
+            
+load
+    ; IN:   src points to the file name
+    ;       Y = sub-device (0 implies dest = load address)
+            
+            stz     $1
+
+            ;IEC Test 
+            ; Send the command
+            lda #$28
+            sta TALKER_CMD
+            lda #$F0 
+            sta TALKER_CMD
+
+            jsr     send_str
+
+            lda #$3F
+            sta TALKER_CMD_LAST
+            
+            lda #$48
+            sta TALKER_CMD
+            lda #$60
+            sta TALKER_CMD
+
+          ; go read the data 
+            jsr read_data
+            sty size+0
+            sta size+1
+
+            lda #$5F
+            sta TALKER_CMD_LAST
+
+            ; Close the transaction
+            lda #$28
+            sta TALKER_CMD
+            lda #$E0 
+            sta TALKER_CMD
+            lda #$3F
+            sta TALKER_CMD_LAST
+            rts
+            
+read_data
+    ; IN:   Y=0 (load to dest) or Y=1 (load to embedded address)
+    ; Out:  A:Y = count of bytes read, dest updated.  CS on error.
+ 
+            phx
+            
+          ; Read the would-be load-address into A:X
+            jsr     read_byte
+            bcs     _out
+            tax                 ; Stash the LSB in X
+            jsr     read_byte
+            bcs     _out
+
+          ; Update dest ptr if the sub-channel is 1
+            cpy     #1
+            bne     _read
+            stx     dest+0
             sta     dest+1
 
-            jsr     read_byte
-            bcs     _out
-            jsr     read_byte
-            bcs     _out
-
+_read       
+            ldx     #0            
             ldy     #0
+
 _loop       jsr     read_byte
             bcs     _done
             smb     1,$1
@@ -168,18 +334,19 @@ _loop       jsr     read_byte
             stz     $1
             iny
             bne     _loop
+            inx
             inc     dest+1
             bra     _loop
 _done
+            txa
             clc
 _out
+            plx
             rts            
 
 read_byte
             smb     1,$1
-            tya
-            tax
-            inc     $c000,x
+            inc     $c000+79
             stz     $1
             lda     LISTNER_FIFO_STAT
             lsr     a
