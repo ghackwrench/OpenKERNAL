@@ -50,6 +50,7 @@ CORE	= \
 
 C256JR	= \
 	platform/jr/jr.asm \
+	platform/jr/iec.asm \
 	platform/jr/irq.asm \
 	platform/jr/ps2.asm \
 	platform/jr/console.asm \

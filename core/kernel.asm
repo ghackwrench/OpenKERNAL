@@ -80,7 +80,6 @@ tos_h       .byte   ?
 mem_start   .word       ?
 mem_end     .word       ?
 msg_switch  .byte       ?
-iec_timeout .byte       ?
 current_dev .byte       ?
             .send
 
@@ -212,18 +211,18 @@ RAMTAS      jmp     ramtas
 RESTOR      jmp     restor
 VECTOR      jmp     vector
 SETMSG      jmp     setmsg
-LSTNSA      jmp     lstnsa
-TALKSA      jmp     talksa
+LSTNSA      jmp     platform.iec.lstnsa
+TALKSA      jmp     platform.iec.talksa
 MEMBOT      jmp     membot
 MEMTOP      jmp     memtop
 SCNKEY      jmp     scnkey
-SETTMO      jmp     settmo
-IECIN       jmp     iecin
-IECOUT      jmp     iecout
-UNTALK      jmp     untalk
-UNLSTN      jmp     unlstn
-LISTEN      jmp     listen
-TALK        jmp     talk
+SETTMO      jmp     platform.iec.settmo
+IECIN       jmp     platform.iec.iecin
+IECOUT      jmp     platform.iec.iecout
+UNTALK      jmp     platform.iec.untalk
+UNLSTN      jmp     platform.iec.unlstn
+LISTEN      jmp     platform.iec.listen
+TALK        jmp     platform.iec.talk
 READST      jmp     io.readst
 SETLFS      jmp     io.setlfs
 SETNAM      jmp     io.setnam
