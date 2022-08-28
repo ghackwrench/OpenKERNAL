@@ -6,145 +6,381 @@
 
             .namespace  kernel
 
+            .section    dp
+queue       .byte       ?   ; queue to detect when to signal end-of-data
+queued      .byte       ?   ; negative if a byte is in the queue
+            .ends
+            
             .section    kernel
-
-; Writting:
-TALKER_CMD      = $D680     ; Write all Command here, save $3F, $5F
-TALKER_CMD_LAST = $D681     ; This is for $3F or $5F Only
-TALKER_DTA      = $D682     ; Any other data, write here
-TALKER_DTA_LAST = $D683     ; Write to this address for the last data to send
-
-; Reading:
-LISTNER_DTA     = $D680     ; Read Data From FIFO
-LISTNER_FIFO_STAT   = $D681 ; Bit[0] Empty Flag (1 = Empty, 0 = Data in FIFO)
-LISTNER_FIFO_CNT_LO = $D682 
-LISTNER_FIFO_CNT_HI = $D683
-
-
-
-send_str
-            phx
-            phy
-
-            lda     (src)
-   smb 1,$1
-   ;sta $c000
-   stz $1
-            tax
-            ldy     #1
-_loop
-            lda     (src),y
-            beq     _done
-            cmp     #$22    ; end quote
-            beq     _done
-   smb 1,$1
-   ;sta $c000,y
-   stz $1
-            stx     TALKER_DTA
-            tax
-            iny
-            bra     _loop
-
-_done       stx     TALKER_DTA_LAST
-            clc
             
-            ply
-            plx
+TIMEOUT_WRITE   =     1
+TIMEOUT_READ    =     2
+MISMATCH        =    16
+EOI             =    64
+NO_DEVICE       =   128
+
+error
+
+    ; Internal function.  
+    ; Updates io.status with the bits set in A.  
+    ; Does not change the state of the carry.
+    
+            ora     kernel.io.status
+            sta     kernel.io.status
+            rts                  
+
+queue_data
+
+    ; Internal function.
+    ; Delays writes of data bytes to the IEC bus by one character.
+    ; This enables the stack to automatically determine when to
+    ; signal that this is the last data byte in its sequence.
+    ; On error, sets carry and returns the READST value in A.
+    
+            bit     queued
+            bmi     _swap
+            sta     queue
+            dec     queued
             rts
+_swap
+            pha
+            lda     queue
+            jsr     platform.iec.write_byte
+            pla
+            bcs     error
+            sta     queue
+_out        rts
+
+
+flush_queue
+
+    ; Internal function
+    ; If there is a byte remaining in the queue, send it
+    ; using the IEC "last byte" protocol.
+    ; On error, sets carry and returns the READST value in A.
+
+            bit     queued
+            bpl     _done
+            lda     queue
+            jsr     platform.iec.write_last_byte
+            bcs     error
+            stz     queued
+_done       rts            
+
+
+reset
+
+    ; Internal function.
+    ; Clears the write queue and the READST value.
+    
+            stz     kernel.io.status
+            stz     queued
+            rts
+
+check_dev
+
+    ; Internal function.  
+    ; Ensures that the device number in A is valid for the IEC
+    ; bus.  Sets the carry and returns A=#NO_DEVICE on error.
+    
+            cmp     #16
+            bcc     _out
+            lda     #NO_DEVICE
+_out        rts
+
+talk
+
+    ; IN: A = device (8..15)
+    ; NOTE: The iec routines don't appear to return any status;
+    ;       instead, users are expected to call READST after
+    ;       each invocation.  In this particular implementation,
+    ;       carry will be set, and A will contain the value to
+    ;       be returned by READST.
+    
+            jsr     check_dev
+            bcs     _error
+            ora     #$40
+            jsr     platform.iec.send_atn
+            bcs     _error
+            rts
+_error      jmp     error
+
             
-            
+untalk
+
+    ; NOTE: The iec routines don't appear to return any status;
+    ;       instead, users are expected to call READST after
+    ;       each invocation.  In this particular implementation,
+    ;       carry will be set, and A will contain the value to
+    ;       be returned by READST.
+    
+            jsr     flush_queue
+            bcs     _error
+            lda     #$5f
+            jsr     platform.iec.send_atn_last
+            bcs     _error
+            rts
+_error      jmp     error
+
+listen
+
+    ; IN: A = device (8..15)
+    ; NOTE: The iec routines don't appear to return any status;
+    ;       instead, users are expected to call READST after
+    ;       each invocation.  In this particular implementation,
+    ;       carry will be set, and A will contain the value to
+    ;       be returned by READST.
+    
+            jsr     check_dev
+            bcs     _error
+            ora     #$20
+            jsr     platform.iec.send_atn
+            bcs     _error
+            rts
+_error      jmp     error
+
+
+unlstn
+
+    ; NOTE: The iec routines don't appear to return any status;
+    ;       instead, users are expected to call READST after
+    ;       each invocation.  In this particular implementation,
+    ;       carry will be set, and A will contain the value to
+    ;       be returned by READST.
+    
+            jsr     flush_queue
+            bcs     _error
+            lda     #$3f
+            jsr     platform.iec.send_atn_last
+            bcs     _error
+            rts
+_error      jmp     error
+
+talksa
+lstnsa
+
+    ; IN: A = device (8..15)
+    ; NOTE: The iec routines don't appear to return any status;
+    ;       instead, users are expected to call READST after
+    ;       each invocation.  In this particular implementation,
+    ;       carry will be set, and A will contain the value to
+    ;       be returned by READST.
+    ;
+    ; These two routines are nominally separate to hint the kernel
+    ; about what the bus is expected to do.  On the C256 Jr., the
+    ; state machine in the FPGA automatically handles both cases.
+
+            jsr     check_dev
+            bcs     _error
+            ora     #$60
+            jsr     platform.iec.send_atn
+            bcs     _error
+            rts
+_error      jmp     error
+
+
+
 load
-    ; IN:   src points to the file name
-    ;       Y = sub-device (0 implies dest = load address)
+
+    ; IN:   Device and sub set using SETLFS
+    ;       File name set using SETNAM
+    ;       A= 0->read, 1..255->verify
+    ;       X/Y = dest address (if secondary != 0)
+    ;
+    ; OUT:  X/Y = end address, or carry set and A = error.
+    ;
+    ; NOTE: On error, A is a KERNAL error, NOT a READST vlaue!
+
+          ; Reset the iec queue and status
+            jsr     reset
+
+          ; initialize dest; may be overriden later 
+            stx     dest+0
+            sty     dest+1
+
+          ; X = read/verify
+            tax
+
+          ; Y = flag to use address in file over dest address above.
+            ldy     cur_addr
             
-            stz     $1
-  smb 1,$1
-  tya
-  ora #48
-  ;sta $c000+80
-  stz $1
-
-            ;IEC Test 
-            ; Send the command
-            lda #$28
-            sta TALKER_CMD
-            lda #$F0 
-            sta TALKER_CMD
-
-            jsr     send_str
-
-            lda #$3F
-            sta TALKER_CMD_LAST
+          ; Open the file for read.  
+          ; NOTE: returns a KERNAL error; must check READST as well!
+            jsr     open_file_for_read
+            bcs     _out
+            jsr     READST
+            ora     #0
+            bne     _error
             
-            lda #$48
-            sta TALKER_CMD
-            lda #$60
-            sta TALKER_CMD
-
-          ; go read the data 
-            jsr read_data
-
-            lda #$5F
-            sta TALKER_CMD_LAST
-
-            ; Close the transaction
-            lda #$28
-            sta TALKER_CMD
-            lda #$E0 
-            sta TALKER_CMD
-            lda #$3F
-            sta TALKER_CMD_LAST
-
+          ; Read the file, sets X/Y to last address (+1).
+            jsr     read_verify_pgm_data
+            bcs     _error
+            
+            jsr     close_file
+            bcs     _error
+            
             clc
+_out        rts
+_error      jmp     error
+
+
+open_file_for_read
+
+    ; Internal function.
+    ;
+    ; IN:   Device and sub set using SETLFS
+    ;       File name set using SETNAM
+    ;
+    ; OUT:  Carry set and A = a KERNEL error
+    ;       (MISSING_FILE_NAME) on error.
+    ;
+    ; NOTE: On IEC error, Sets READST and CLEARS the carry.
+
+            lda     fname_len
+            bne     _open
+            lda     #MISSING_FILE_NAME
+            sec
             rts
             
-read_data
-    ; IN:   Y=0 (load to dest) or Y=1 (load to embedded address)
-    ; Out:  A:Y = count of bytes read, dest updated.  CS on error.
- 
-            phx
+_open
+            lda     cur_device
+            jsr     LISTEN
+            bcs     _error
             
-          ; Read the would-be load-address into A:X
-            jsr     read_byte
-            bcs     _out
-            tax                 ; Stash the LSB in X
-            jsr     read_byte
-            bcs     _out
+            lda     #$f0        ; Open channel 0
+            jsr     send_cmd
+            bcs     _error
+            
+            jsr     send_fname
+            bcs     _error
 
-          ; Update dest ptr if the sub-channel is 1
-            cpy     #1
-            bne     _read
-            stx     dest+0
+            jsr     UNLSTN
+            bcs     _error
+            
+            lda     cur_device
+            jsr     TALK
+            bcs     _error
+            
+            lda     #0          ; Channel 0; Channel 1 magic is internal.
+            jsr     TALKSA      ; Reopen channel; tells drive to send.
+            bcs     _error
+            
+            rts
+
+_error      
+          ; Not a KERNEL error; must call READST for more information.
+            clc
+            rts
+
+
+send_fname
+
+    ; Internal function
+    ; Writes the filename (from SETFN) via the IECOUT.
+    ; Returns the IEC error status.
+    
+            phy
+            ldy     #0
+_loop
+            lda     (kerel.io.fname),y
+            jsr     IECOUT
+            bcs     _out
+            iny
+            cpy     kernel.io.fname_len
+            bcc     _loop
+            clc
+_out
+            ply
+            rts
+
+close_file
+
+    ; Internal function
+    ; Closes the current reading or writing file.
+    ; Returns the IEC error status.
+    
+            jsr     UNTALK
+            bcs     _out
+            
+            lda     cur_device
+            jsr     LISTEN
+            bcs     _out
+            
+            lda     #$e0        ; Close channel 0
+            jsr     send_cmd
+            bcs     _out
+                        
+            jsr     UNLSTN
+            bcs     _out
+            
+_out        rts
+            
+
+read_verify_pgm_data
+
+    ; Internal funciton.
+    ; Implements READ/VERIFY for PGM files.
+    ;
+    ; IN:   Y=0 (load to dest) or Y=1 (load to embedded address)
+    ;       X=0 (read) or 1..255 (verify)
+    ;
+    ; Out:  X:Y = last address read/verified
+    ;       On error, Carry set, and A = IEC error (READST value)
+
+ 
+          ; X = 0/2 read/verify
+            tax
+            beq     _emode  ; read
+            ldx     #2      ; verify
+_emode      nop            
+
+          ; Read the would-be load-address into src
+            jsr     platform.iec.read_byte
+            bcs     _error
+            sta     src+0
+            jsr     platform.iec.read_byte
+            bcs     _error
+            sta     src+1
+
+          ; Update dest ptr if the sub-channel (Y) is 1
+            tya
+            beq     _edest
+            lda     src+0
+            sta     dest+0
+            lda     src+1
             sta     dest+1
+_edest      nop
 
-_read       
-
-_loop       jsr     read_byte
-            smb     1,$1
-            sta     (dest)
-            stz     $1
+_loop       
+            jsr     platform.iec.read_byte
+            bcs     _error
+            jmp     (_op,x)
+_cont
             inc     dest
             bne     _next
             inc     dest+1
-_next       bcc     _loop
+_next       
+            bcc     _loop
             clc
-_out
-            plx
-            rts            
+_out            
+            ldx     dest+0
+            ldy     dest+1
+            rts          
+_op  
+            .word   _load
+            .word   _verify
+_load
+            sta     (dest)
+            bra     _cont
+_verify
+            cmp     (dest)
+            beq     _cont
+            lda     #MISMATCH
+            sec
+            jsr     _error
+            bra     _out    ; Mismatch still returns X/Y.
+_error      
+            jmp     error   ; Forward the IEC error status.
 
-read_byte
-            smb     1,$1
-            inc     $c000+79
-            stz     $1
-            lda     LISTNER_FIFO_STAT
-            lsr     a
-            bcs     read_byte
-            lda     LISTNER_DTA
-            pha
-            lda     LISTNER_FIFO_STAT
-            asl     a
-            pla
-            rts
-            
             .send
             .endn

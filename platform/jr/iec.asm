@@ -33,65 +33,58 @@ settmo
             sta     iec_timeout ; TODO: move here.
             rts
             
-iecin
-
-
-iecout
-            sta    TALKER_DTA
-            rts 
-
-talk
-            cmp     #16
-            bcs     _out
-            ora     #$40
-            jmp     send_talker_cmd
-_out        rts            
-            
-untalk
-            lda     #$5f
-            jmp     send_talker_cmd
+read_byte
+            smb     1,$1
+            inc     $c000+79
+            stz     $1
+            lda     LISTNER_FIFO_STAT
+            lsr     a
+            bcs     read_byte
+            lda     LISTNER_DTA
+            pha
+            lda     LISTNER_FIFO_STAT
+            asl     a
+            pla
             rts
+            
 
-listen
-            cmp     #16
-            bcs     _out
-            ora     #$20
-            jmp     send_talker_cmd
-_out        rts            
-
-
-unlstn
-            lda     #$3f
-            jmp     send_talker_cmd
-
-
-talksa
-lstnsa
-    ; These two routines are nominally separate to hint the kernel
-    ; about what the bus is expected to do.  On the C256 Jr., the
-    ; state machine in the FPGA automatically handles both cases.
-            cmp     #16
-            bcs     _out
-            ora     #$60
-            jmp     send_talker_cmd
-_out        rts            
-
-
-send_talker_cmd
+send_data
             phx
             ldx     $1
             stz     $1
-            cmp     #$3f
-            beq     _last
-            cmp     #$5f
-            beq     _last
+            sta     TALKER_DTA
+            bra     ret_stat
+
+send_data_last
+            phx
+            ldx     $1
+            stz     $1
+            sta     TALKER_DTA_LAST
+            bra     ret_stat
+
+send_atn
+            phx
+            ldx     $1
+            stz     $1
             sta     TALKER_CMD
-_done       stx     $1
-            plx
+            bra     ret_stat
+
+send_atn_last
+            phx
+            ldx     $1
+            stz     $1
+            sta     TALKER_CMD_LAST
+            bra     ret_stat
+
+ret_stat
+            lda     LISTNER_FIFO_STAT
+            and     #16
             clc
+            adc     #$ff
+            lda     #kernel.io.DEVICE_NOT_PRESENT
+            stx     $1
+            plx
             rts
-_last       sta     TALKER_CMD_LAST
-            bra     _done
 
 
             .send
