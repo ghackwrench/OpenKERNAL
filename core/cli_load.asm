@@ -16,40 +16,116 @@ quote       .byte       ?   ; Offset to start of quoted string.
             .section    kernel
 
 load
-    ; IN: cmd[] starts with "LOAD"
-    
-        ldy     #4  ; next character after "LOAD"
-_loop   lda     cmd,y
-        cmp     #$22    ; quote
-        beq     _quote
-        cmp     #' '
-        bne     _error
-        iny
-        bra     _loop
-_error
-        sec
-_out    
+        jsr     find_arg
+        bcc     _quote
         rts
+
 _quote         
-        jsr     get_quoted
+        jsr     set_fname
         bcs     _out
 
-          ; Request operation on 0,8,0
-            lda     #0      ; Logical device # ... not meaningful here.
-            ldx     #8      ; Hard-coded for the moment
-            ldy     #0      ; No sub-device / "command" -> use $0801
-            jsr     SETLFS
+        lda     fname_len
+        cmp     #5          ; has an extension?
+        bcc     _prg        ; No, default to prg.
 
+      ; Y = start of extension (starting with the '.').
+        lda     fname+0
+        clc
+        adc     fname_len
+        sec
+        sbc     #4      ; should be start of ext
+        tay
+        
+      ; Does it start with a '.'?
+        lda     (fname),y
+        cmp     #'.'
+        bne     _prg    ; No, default to prg.     
+
+        iny     
+        jmp     load_by_extension
+_prg    jmp     load_prg
+_out    rts
+
+extensions
+        .text   "PRG", load_prg
+        .byte   0
+
+load_by_extension
+        ldx     #0
+_loop   lda     extensions,x
+        beq     _failed
+        jsr     _cmp
+        bcc     _found
+        txa
+        adc     #4  ; 5 with the carry
+        tax
+        bra     _loop
+_found  jmp     (extensions+2,x)
+_failed sec
+        rts
+_cmp
+        phy
+        sec
+
+        lda     (fname),y
+        bit     extensions+0,x
+        bne     _out
+        
+        iny
+        lda     (fname),y
+        bit     extensions+1,x
+        bne     _out
+        
+        iny
+        lda     (fname),y
+        bit     extensions+2,x
+        bne     _out
+        
+        clc
+_out
+        ply
+        rts        
+
+
+load_prg
+        lda #2
+        sta $1
+
+        ldy #0
+_loop
+        lda (fname),y
+        sta $c001,y
+        iny
+        cpy fname_len
+        bne _loop
+          
+
+          ; Set Y=0 for fname == "$", Y=1 (binary) otherwise.
+            ldy     #1
+            lda     fname_len
+            cmp     #1
+            bne     _setlfs
+            lda     (fname)
+            cmp     #'$'
+            bne     _setlfs
+            ldy     #0      ; Directory requested, override load address.
+
+_setlfs     
+        tya
+        ora #'0'
+        sta $c000
+
+            lda     #0      ; Logical device # ... not meaningful here.
+            ldx     device
+            jsr     SETLFS
+            
           ; Load the data
             lda     #0      ; load, not verify
-            ldx     #<$801
-            ldy     #>$801
-            jsr     LOAD
-            bcs     _out    ; TODO: print the error
-            
-        rts
+            ldx     #<$801  ; in case of directory
+            ldy     #>$801  ; in case of directory
+            jmp     LOAD
 
-get_quoted
+set_fname
         iny
         phy
 _loop   lda     cmd,y

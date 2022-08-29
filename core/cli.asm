@@ -65,8 +65,7 @@ prompt
             lda     #' '
             jsr     putc
             lda     device
-            clc
-            adc     #'0'
+            ora     #'0'
             jsr     putc
             jmp     cr
             
@@ -180,7 +179,7 @@ dir
             lda     #1
             jsr     SETNAM
 
-          ; Request operation on 0,8,0
+          ; Request operation on 0,device,0
             lda     #0      ; Logical device # ... not meaningful here.
             ldx     device
             ldy     #0      ; No sub-device / "command" -> use $0801
