@@ -243,6 +243,12 @@ _wrong
             jsr     platform.iec.read_byte
             bcs     _error
             sta     src+1
+            
+            jsr     platform.iec.read_byte
+            bcs     _error
+            jsr     platform.iec.read_byte
+            bcs     _error
+
 
           ; Update dest ptr if the sub-channel (Y) is 1
             tya
