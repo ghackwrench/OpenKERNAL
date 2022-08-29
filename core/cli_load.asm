@@ -220,12 +220,6 @@ read_verify_pgm_data
     ; Out:  X:Y = last address read/verified
     ;       On error, Carry set, and A = IEC error (READST value)
 
- 
-          ; X = 0/2 read/verify
-            tax
-            beq     _emode  ; read
-            ldx     #2      ; verify
-_emode      nop            
 
           ; Read the would-be load-address into src
             jsr     platform.iec.read_byte
@@ -251,7 +245,7 @@ _loop
             beq     _done
 _error      jmp     error   ; Forward the IEC error status.
 
-_found      jmp     (_op,x)
+_found      jmp     _load
 _cont
             inc     dest
             bne     _next
@@ -263,19 +257,10 @@ _out
             ldx     dest+0
             ldy     dest+1
             rts          
-_op  
-            .word   _load
-            .word   _verify
+
 _load
             sta     (dest)
             bra     _cont
-_verify
-            cmp     (dest)
-            beq     _cont
-            lda     #kernel.iec.MISMATCH
-            sec
-            jsr     _error
-            bra     _out    ; Mismatch still returns X/Y.
 
 
 load_pgx2
