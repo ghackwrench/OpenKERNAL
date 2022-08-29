@@ -212,33 +212,26 @@ _error
 read_verify_pgm_data
 
     ; Internal funciton.
-    ; Implements READ/VERIFY for PGM files.
+    ; Implements load-body for .pgx files.
     ;
-    ; IN:   Y=0 (load to dest) or Y=1 (load to embedded address)
-    ;       X=0 (read) or 1..255 (verify)
+    ; IN:   SETNAM and SETLFS have been called.
     ;
-    ; Out:  X:Y = last address read/verified
+    ; Out:  X:Y = end address, far_addr = exec address
     ;       On error, Carry set, and A = IEC error (READST value)
 
- ldx #2
- stx $1
-          ; Make sure it's a PGX file
+          ; Make sure it's a PGX file.
             ldx     #0
 _signature  jsr     IECIN
-            bcs     _wrong
-  sta $c000,x
+            bcs     _error
             cmp     _ident,x
-            bne     _wrong
+            bne     _mismatch
             inx
             cpx     #4
             bne     _signature
-            lda     $32
-            sta     $c000,x
-_wrong      
 
+          ; Read the dest and exec addresses.
             ldx     #0
-_addr
-            jsr     IECIN
+_addr       jsr     IECIN
             bcs     _error
             sta     far_dest,x
             sta     far_addr,x
@@ -255,7 +248,6 @@ _error      jmp     error   ; Forward the IEC error status.
 
 _found
             jsr     platform.far_store
-_cont
             ldx     #far_dest
             jsr     far_inc
 
@@ -265,7 +257,12 @@ _out
             ldx     far_dest+0
             ldy     far_dest+1
             rts          
+
 _ident      .text   "PGX",0 ; 6502 family
+_mismatch   lda     #kernel.iec.MISMATCH
+            sec
+            bra     _error
+
 
 far_inc
     ; IN:   X->32 bit long in DP
