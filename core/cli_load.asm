@@ -221,6 +221,15 @@ read_verify_pgm_data
     ;       On error, Carry set, and A = IEC error (READST value)
 
 
+            jsr     platform.iec.read_byte
+            bcs     _error
+            jsr     platform.iec.read_byte
+            bcs     _error
+            jsr     platform.iec.read_byte
+            bcs     _error
+            jsr     platform.iec.read_byte
+            bcs     _error
+
           ; Read the would-be load-address into src
             jsr     platform.iec.read_byte
             bcs     _error
