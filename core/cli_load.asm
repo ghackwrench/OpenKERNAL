@@ -224,7 +224,7 @@ read_verify_pgm_data
  stx $1
           ; Make sure it's a PGX file
             ldx     #0
-_signature  jsr     platform.iec.read_byte
+_signature  jsr     IECIN
             bcs     _wrong
   sta $c000,x
             cmp     _ident,x
@@ -238,7 +238,7 @@ _wrong
 
             ldx     #0
 _addr
-            jsr     platform.iec.read_byte
+            jsr     IECIN
             bcs     _error
             sta     far_dest,x
             sta     far_addr,x
@@ -247,9 +247,9 @@ _addr
             bne     _addr
 
 _loop       
-            jsr     platform.iec.read_byte
+            jsr     IECIN
             bcc     _found
-            cmp     #kernel.iec.EOI
+            eor     #kernel.iec.EOI
             beq     _done
 _error      jmp     error   ; Forward the IEC error status.
 
