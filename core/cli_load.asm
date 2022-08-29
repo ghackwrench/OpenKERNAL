@@ -263,7 +263,7 @@ _loop
 _error      jmp     error   ; Forward the IEC error status.
 
 _found
-            sta     (far_dest)
+            jsr     platform.far_store
 _cont
             inc     far_dest
             bne     _next

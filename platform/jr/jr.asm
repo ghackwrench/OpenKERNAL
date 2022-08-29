@@ -145,7 +145,7 @@ _resume
         pla
         rti
 
-far_poke
+far_store
         sta     (kernel.shell.far_dest)
         clc
         rts
