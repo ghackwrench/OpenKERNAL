@@ -108,12 +108,6 @@ copyright
             .text   "applications which simply use the ABI are not 'derived works'.", 13
             .byte   0
             
-
-            .text   13
-            .text   "There will be a simple shell here soon.", 13
-            .byte   0
-
-            
 thread      .namespace  ; For devices borrowed from the TinyCore kernel.
 yield       wai
             rts
@@ -149,6 +143,7 @@ _loop       lda     (src),y
 _done       rts
 
 error
+        pha
         lda     #<_msg
         sta     src
         lda     #>_msg
@@ -159,8 +154,15 @@ _loop   lda     (src),y
         jsr     platform.console.putc
         iny
         bra     _loop
-_done   jmp     wreset       
-_msg    .null   "Error"
+_done   
+        pla
+        clc
+        adc     #'0'
+        jsr     platform.console.putc
+        lda     #13
+        jsr     platform.console.putc
+        rts
+_msg    .null   "Error "
 
 strcmp      ldy     #$ff
 _loop       iny

@@ -16,6 +16,7 @@ cmd         .fill   80
             .section    dp
 str_ptr     .word       ?
 printing    .word       ?
+device      .byte       ?
             .send            
 
             .section    shell
@@ -23,12 +24,14 @@ printing    .word       ?
 strings:
 str         .namespace
 unknown     .text   "?", 13, 0
-prompt      .text   13,"READY",13,0
+prompt      .text   13,"READY",0
 dir         .null   "DIR"
 stat        .null   "STAT"
 rds         .null   "RDS"
 cls         .null   "CLS"
 list        .null   "LIST"
+load        .null   "LOAD"
+drive       .null   "DRIVE"
             .endn
 
 
@@ -40,6 +43,9 @@ start
             bra     shell
 
 shell
+            lda     #8
+            sta     device
+            
             jsr     prompt
 _loop       jsr     get_cmd
             jsr     do_cmd
@@ -49,9 +55,20 @@ _loop       jsr     get_cmd
             jsr     puts
             bra     _loop
 
+cr
+            lda     #13
+            jmp     putc
+
 prompt
             ldy     #<str.prompt
-            jmp     puts
+            jsr     puts
+            lda     #' '
+            jsr     putc
+            lda     device
+            clc
+            adc     #'0'
+            jsr     putc
+            jmp     cr
             
 get_cmd
             ldx     #0
@@ -74,6 +91,9 @@ _loop       ldy     _table,x
             jsr     strcmp
             bcs     _next
             jsr     _call
+            bcc     _ready
+            jsr     kernel.error
+_ready            
             jmp     prompt
 _next
             inx
@@ -87,6 +107,8 @@ _table
             .word   str.cls,    cls
             .word   str.dir,    dir
             .word   str.list,   list
+            .word   str.load,   load
+            .word   str.drive,  drive
 ;            .word   str.stat,   my_status
 ;            .word   str.rds,    Read_Drive_Status
             .byte   0           
@@ -105,7 +127,48 @@ _loop
 _out        rts            
 
 cls         lda     #12
-            jmp     putc
+            jsr     putc
+            clc
+            rts
+
+find_arg
+    ; IN: Y points just beyond the command string
+
+_loop
+            lda     cmd,y
+            cmp     #' '
+            beq     _next
+            cmp     #13
+            beq     _error
+            clc
+            rts
+_next
+            iny
+            bne     _loop
+_error
+            sec
+            rts                                    
+
+drive
+            jsr     find_arg
+            lda     #ILLEGAL_DEVICE_NUMBER
+            bcs     _done
+
+            lda     cmd,y
+            cmp     #'8'
+            beq     _set
+            cmp     #'9'
+            beq     _set
+
+            lda     #ILLEGAL_DEVICE_NUMBER
+            sec
+_done       
+            rts
+_set
+            sbc     #'0'
+            sta     device
+            clc
+            bra     _done                        
 
 dir
             phx
@@ -119,7 +182,7 @@ dir
 
           ; Request operation on 0,8,0
             lda     #0      ; Logical device # ... not meaningful here.
-            ldx     #8      ; Hard-coded for the moment
+            ldx     device
             ldy     #0      ; No sub-device / "command" -> use $0801
             jsr     SETLFS
 
@@ -138,131 +201,6 @@ _out
             plx
             rts
 _fname      .text   "$"            
-
-list
-            lda     #13
-            jsr     platform.console.putc
-
-            phx
-            phy
-
-            ldx     #0  ; count MSB
-            ldy     #0  ; count LSB
-
-            lda     #<$801
-            sta     src+0
-            lda     #>$801
-            sta     src+1
-
-_line       
-          ; File ends when the would-be next address is zero.
-            jsr     _fetch
-            sta     tos_l       ; tmp
-            jsr     _fetch
-            ora     tos_l
-            beq     _done
-
-          ; Fetch the line number
-            jsr     _fetch
-            sta     tos_l
-            jsr     _fetch          
-            sta     tos_h
-            
-          ; Print the line number
-            jsr     print_number          
-
-          ; Print the rest of the line
-_loop       
-            jsr     _fetch
-            beq     _eol
-            
-            cmp     #32
-            bcc     _fill
-            cmp     #128
-            bcc     _putc
-_fill       lda     #' '
-          ; Check for a token...
-_putc       jsr     platform.console.putc
-            bra     _loop
-            
-_eol        lda     #13
-            jsr     platform.console.putc
-            bra     _line
-                        
-_fetch
-            lda     (src),y
-            iny
-            bne     _fetched
-            inc     src+1
-_fetched
-            ora     #0
-            rts  
-            
-_done       
-            ply
-            plx
-            clc
-            rts
-
-print_number
-            phx
-            phy
-
-            stz     printing
-            ldx     #0      ; Not yet printing
-            ldy     #0
-_loop       jsr     _cmp
-            bcc     _print
-            inc     printing
-            inx
-            jsr     _sub
-            bra     _loop
-_print      lda     printing
-            beq     _next
-
-            txa
-            clc
-            adc     #'0'
-            jsr     platform.console.putc
-            ldx     #0
-_next
-            iny
-            iny
-            cpy     #10
-            bne     _loop
-
-            lda     printing
-            bne     _done
-            lda     #'0'
-            jsr     platform.console.putc
-            
-_done
-            lda     #' '
-            jsr     platform.console.putc
-            ply
-            plx
-            clc
-            rts            
-_cmp
-            lda     tos_h
-            cmp     _table+1,y
-            bcc     _out        ; MSB is lower
-            bne     _out        ; MSB is higher
-            lda     tos_l
-            cmp     _table+0,y  ; Result is LSB compare
-_out        rts            
-
-_sub        
-            sec
-            lda     tos_l
-            sbc     _table+0,y
-            sta     tos_l
-            lda     tos_h
-            sbc     _table+1,y
-            sta     tos_h
-            rts
-_table
-            .word   10000, 1000, 100, 10, 1
 
 
 

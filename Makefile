@@ -45,6 +45,8 @@ CORE	= \
 	core/keyboard.asm \
 	core/vectors.asm \
 	core/cli.asm \
+	core/cli_list.asm \
+	core/cli_load.asm \
 
 ####### C256jr ##################################################
 
