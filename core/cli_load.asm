@@ -235,25 +235,16 @@ _signature  jsr     platform.iec.read_byte
             lda     $32
             sta     $c000,x
 _wrong      
-                        
-          ; Read the would-be load-address into dest and addr
+
+            ldx     #0
+_addr
             jsr     platform.iec.read_byte
             bcs     _error
-            sta     far_dest+0
-            sta     far_addr+0
-            jsr     platform.iec.read_byte
-            bcs     _error
-            sta     far_dest+1
-            sta     far_addr+1
-            
-            jsr     platform.iec.read_byte
-            bcs     _error
-            jsr     platform.iec.read_byte
-            bcs     _error
-            stz     far_addr+2
-            stz     far_addr+3
-            stz     far_dest+2
-            stz     far_dest+3
+            sta     far_dest,x
+            sta     far_addr,x
+            inx
+            cpx     #4
+            bne     _addr
 
 _loop       
             jsr     platform.iec.read_byte
