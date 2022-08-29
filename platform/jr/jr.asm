@@ -146,7 +146,7 @@ _resume
         rti
 
 far_poke
-        ;sta     (kernel.shell.far_poke)
+        sta     (kernel.shell.far_dest)
         clc
         rts
 

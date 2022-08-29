@@ -11,7 +11,7 @@
 
             .section    dp
 far_addr    .fill       4
-far_poke    .fill       4
+far_dest    .fill       4
             .send            
 
             .section    kernel
@@ -239,11 +239,11 @@ _wrong
           ; Read the would-be load-address into dest and addr
             jsr     platform.iec.read_byte
             bcs     _error
-            sta     dest+0
+            sta     far_dest+0
             sta     far_addr+0
             jsr     platform.iec.read_byte
             bcs     _error
-            sta     dest+1
+            sta     far_dest+1
             sta     far_addr+1
             
             jsr     platform.iec.read_byte
@@ -252,6 +252,8 @@ _wrong
             bcs     _error
             stz     far_addr+2
             stz     far_addr+3
+            stz     far_dest+2
+            stz     far_dest+3
 
 _loop       
             jsr     platform.iec.read_byte
@@ -261,21 +263,21 @@ _loop
 _error      jmp     error   ; Forward the IEC error status.
 
 _found
-            sta     (dest)
+            sta     (far_dest)
 _cont
-            inc     dest
+            inc     far_dest
             bne     _next
-            inc     dest+1
+            inc     far_dest+1
 _next       
             bcc     _loop
 _done       clc
 _out            
-            ldx     dest+0
-            ldy     dest+1
+            ldx     far_dest+0
+            ldy     far_dest+1
             rts          
 _ident      .text   "PGX",0 ; 6502 family
 
-
+.if false
 load_pgx2
 
   lda #0
@@ -359,6 +361,7 @@ far_inc rts
             inc     3,x
 _done       rts            
 
+.endif
             .send
             .endn
             .endn
