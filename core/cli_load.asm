@@ -245,7 +245,8 @@ _loop
             beq     _done
 _error      jmp     error   ; Forward the IEC error status.
 
-_found      jmp     _load
+_found
+            sta     (dest)
 _cont
             inc     dest
             bne     _next
@@ -257,10 +258,6 @@ _out
             ldx     dest+0
             ldy     dest+1
             rts          
-
-_load
-            sta     (dest)
-            bra     _cont
 
 
 load_pgx2
