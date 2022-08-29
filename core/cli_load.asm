@@ -256,10 +256,9 @@ _error      jmp     error   ; Forward the IEC error status.
 _found
             jsr     platform.far_store
 _cont
-            inc     far_dest
-            bne     _next
-            inc     far_dest+1
-_next       
+            ldx     #far_dest
+            jsr     far_inc
+
             bcc     _loop
 _done       clc
 _out            
@@ -267,6 +266,17 @@ _out
             ldy     far_dest+1
             rts          
 _ident      .text   "PGX",0 ; 6502 family
+
+far_inc
+    ; IN:   X->32 bit long in DP
+            inc     0,x
+            bne     _done
+            inc     1,x
+            bne     _done
+            inc     2,x
+            bne     _done
+            inc     3,x
+_done       rts            
 
 .if false
 load_pgx2
