@@ -165,25 +165,10 @@ load_pgx
             lda     #0      ; read
             
 
-    ; IN:   Device and sub set using SETLFS
-    ;       File name set using SETNAM
-    ;       A= 0->read, 1..255->verify
-    ;       X/Y = dest address (if secondary != 0)
+    ; IN:   File name set using SETNAM
     ;
-    ; OUT:  X/Y = end address, or carry set and A = error.
-    ;
-    ; NOTE: On error, A is a KERNAL error, NOT a READST vlaue!
+    ; OUT:  X/Y = end address, or carry set and A = iec error.
 
-          ; initialize dest; may be overriden later 
-            stx     dest+0
-            sty     dest+1
-
-          ; X = read/verify
-            tax
-
-          ; Y = flag to use address in file over dest address above.
-            ldy     cur_addr
-            
           ; Reset the iec queue and status
             jsr     kernel.iec.reset
 
@@ -196,9 +181,16 @@ load_pgx
             bne     _error
             
           ; Read the file, sets X/Y to last address.
-            jsr     read_verify_pgm_data
-            bcs     _error
+            jsr     read_pgx_data
+            bcc     _close
             
+          ; Try to close the file while preserving the original error.
+            pha
+            jsr     kernel.iec.close_file
+            pla
+            sec
+            bra     _error            
+_close
             jsr     kernel.iec.close_file
             bcs     _error
             
@@ -209,7 +201,7 @@ _error
             bra     _out
     
 
-read_verify_pgm_data
+read_pgx_data
 
     ; Internal funciton.
     ; Implements load-body for .pgx files.
