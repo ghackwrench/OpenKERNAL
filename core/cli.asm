@@ -28,6 +28,7 @@ dir         .null   "DIR"
 stat        .null   "STAT"
 rds         .null   "RDS"
 cls         .null   "CLS"
+list        .null   "LIST"
             .endn
 
 
@@ -83,10 +84,11 @@ _out
 _call
             jmp     (_table,x)
 _table
-            .word   str.dir,    dir
-            .word   str.stat,   my_status
-            .word   str.rds,    Read_Drive_Status
             .word   str.cls,    cls
+            .word   str.dir,    dir
+            .word   str.list,   list
+;            .word   str.stat,   my_status
+;            .word   str.rds,    Read_Drive_Status
             .byte   0           
 
 strcmp
@@ -104,6 +106,38 @@ _out        rts
 
 cls         lda     #12
             jmp     putc
+
+dir
+            phx
+            phy
+
+          ; Point 'src' at the file name ("$").
+            ldx     #<_fname
+            ldy     #>_fname
+            lda     #1
+            jsr     SETNAM
+
+          ; Request operation on 0,8,0
+            lda     #0      ; Logical device # ... not meaningful here.
+            ldx     #8      ; Hard-coded for the moment
+            ldy     #0      ; No sub-device / "command" -> use $0801
+            jsr     SETLFS
+
+          ; Load the data
+            lda     #0      ; load, not verify
+            ldx     #<$801
+            ldy     #>$801
+            jsr     LOAD
+            bcs     _out    ; TODO: print the error
+            
+          ; Show the data
+            jsr     list
+            
+_out
+            ply
+            plx
+            rts
+_fname      .text   "$"            
 
 list
             lda     #13
@@ -249,6 +283,15 @@ _out
             clc
             rts                        
         
+
+            .send 
+            .endn
+            .endn
+                     
+
+.if false
+
+
 SetIOPage0
             stz     $1
             rts
@@ -339,34 +382,6 @@ my_status
 
 
 
-dir
-            phy
-
-          ; Point 'src' at the file name ("$").
-            lda     #<_fname
-            sta     src+0
-            lda     #>_fname
-            sta     src+1
-
-          ; Load the data to $801
-            ldy     #0      ; Use write to address in 'dest'
-            lda     #<$801
-            sta     dest+0
-            lda     #>$801
-            sta     dest+1
-            
-          ; Load the data
-            jsr     load
-            bcs     _out
-            
-          ; Show the data
-            jsr     list
-            
-_out
-            ply
-            rts
-_fname      .null   "$"            
-
             
 Read_Dir    stz $1
             ldx #$00
@@ -416,9 +431,5 @@ FIFO_Empty_StillDir:
             sta TALKER_CMD_LAST
             rts
 
-
-            .send 
-            .endn
-            .endn
-                     
+.endif
 

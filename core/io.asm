@@ -8,11 +8,7 @@
             .namespace  io
 
             .section    dp
-fname       .word       ?       ; file name pointer
-fname_len   .byte       ?       ; file name length
-cur_logical .byte       ?       ; current logical device
-cur_device  .byte       ?       ; current assoc dev #
-cur_addr    .byte       ?       ; current associated secondary addr
+
 cur_in      .byte       ?       ; current input device
 cur_out     .byte       ?       ; current output device
 io_last     .byte       ?       ; device # of most recent read/write operation
@@ -38,17 +34,6 @@ device      .byte       ?
 secondary   .byte       ?
             .endv
             .endn
-
-TOO_MANY_FILES          =   1
-FILE_OPEN               =   2
-FILE_NOT_OPEN           =   3
-FILE_NOT_FOUND          =   4
-DEVICE_NOT_PRESENT      =   5
-NOT_INPUT_FILE          =   6
-NOT_OUTPUT_FILE         =   7
-MISSING_FILE_NAME       =   8
-ILLEGAL_DEVICE_NUMBER   =   9
-
 
             .section    kernel
 
@@ -485,50 +470,6 @@ _next       pla
             ply
             rts
 
-    
-load
-
-            lda     fname+0
-            sta     src+0
-            lda     fname+1
-            sta     src+1
-
-            lda     cur_addr
-            bne     _ready
-            stx     dest+0
-            sty     dest+1
-
-_ready
-            ldy     fname_len
-            beq     _error
-            lda     (fname),y
-            pha
-            lda     #0
-            sta     (fname),y
-
-            ldy     cur_addr
-            beq     _load
-            ldy     #1     
-_load
-            jsr     kernel.load     
-
-            pla
-            ldy     fname_len
-            sta     (fname),y
-
-            ldx     dest+0
-            ldy     dest+1
-            clc
-            rts
-                        
-_error
-            lda     #8  ; Missing file name
-            sec
-            rts
-
-save
-    sec
-    rts
 
 
             .send

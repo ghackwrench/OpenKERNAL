@@ -73,6 +73,11 @@ dest        .word   ?   ; dest ptr for copy operations.
 size        .word   ?   ; size of data at dest.
 tos_l       .byte   ?   ; For BCD conversions
 tos_h       .byte   ?
+fname       .word       ?       ; file name pointer
+fname_len   .byte       ?       ; file name length
+cur_logical .byte       ?       ; current logical device
+cur_device  .byte       ?       ; current assoc dev #
+cur_addr    .byte       ?       ; current associated secondary addr
             .send
 
 
@@ -82,6 +87,17 @@ mem_end     .word       ?
 msg_switch  .byte       ?
 current_dev .byte       ?
             .send
+
+
+TOO_MANY_FILES          =   1
+FILE_OPEN               =   2
+FILE_NOT_OPEN           =   3
+FILE_NOT_FOUND          =   4
+DEVICE_NOT_PRESENT      =   5
+NOT_INPUT_FILE          =   6
+NOT_OUTPUT_FILE         =   7
+MISSING_FILE_NAME       =   8
+ILLEGAL_DEVICE_NUMBER   =   9
 
             .section    kernel
             
@@ -211,19 +227,19 @@ RAMTAS      jmp     ramtas
 RESTOR      jmp     restor
 VECTOR      jmp     vector
 SETMSG      jmp     setmsg
-LSTNSA      jmp     platform.iec.lstnsa
-TALKSA      jmp     platform.iec.talksa
+LSTNSA      jmp     iec.lstnsa
+TALKSA      jmp     iec.talksa
 MEMBOT      jmp     membot
 MEMTOP      jmp     memtop
 SCNKEY      jmp     scnkey
-SETTMO      jmp     platform.iec.settmo
-IECIN       jmp     platform.iec.iecin
-IECOUT      jmp     platform.iec.iecout
-UNTALK      jmp     platform.iec.untalk
-UNLSTN      jmp     platform.iec.unlstn
-LISTEN      jmp     platform.iec.listen
-TALK        jmp     platform.iec.talk
-READST      jmp     io.readst
+SETTMO      jmp     iec.settmo
+IECIN       jmp     iec.iecin
+IECOUT      jmp     iec.iecout
+UNTALK      jmp     iec.untalk
+UNLSTN      jmp     iec.unlstn
+LISTEN      jmp     iec.listen
+TALK        jmp     iec.talk
+READST      jmp     iec.readst
 SETLFS      jmp     io.setlfs
 SETNAM      jmp     io.setnam
 OPEN        jmp     io.open
@@ -233,8 +249,8 @@ CHKOUT      jmp     io.chkout
 CLRCHN      jmp     io.clrchn
 CHRIN       jmp     io.chrin
 CHROUT      jmp     io.chrout
-LOAD        jmp     io.load
-SAVE        jmp     io.save
+LOAD        jmp     iec.load
+SAVE        jmp     iec.save
 SETTIM      jmp     settim
 RDTIM       jmp     rdtim
 STOP        jmp     stop

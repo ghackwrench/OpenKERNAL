@@ -25,8 +25,8 @@ ivec_start
             .word   io.getin
             .word   io.clall
             .word   user
-            .word   io.load
-            .word   io.save
+            .word   iec.load
+            .word   iec.save
 ivec_end
 ivec_size   =   ivec_end - ivec_start
 

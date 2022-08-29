@@ -23,53 +23,111 @@ LISTNER_FIFO_STAT   = $D681 ; Bit[0] Empty Flag (1 = Empty, 0 = Data in FIFO)
 LISTNER_FIFO_CNT_LO = $D682 
 LISTNER_FIFO_CNT_HI = $D683
 
+STAT_RX_NEMPTY  =     1
+STAT_RX_FULL    =     2
+STAT_RX_EOI     =     4
+STAT_NO_ACK     =    16     ; Device not preset
+
             .section    dp
 iec_timeout .byte       ?
+mark        .byte       ? 
+eoi         .byte       ?
             .send            
 
             .section    kernel
 
 settmo
-            sta     iec_timeout ; TODO: move here.
+            sta     iec_timeout
             rts
             
 read_byte
-            smb     1,$1
-            inc     $c000+79
+
+          ; Return EOI if the stream has hit EOI.
+            lda     eoi
+            beq     _read
+            lda     #kernel.iec.EOI
+            sec
+            rts
+
+_read
+          ; Save I/O map and switch to I/O Zero.
+            phx
+            ldx     $1
             stz     $1
+
+        smb     1,$1
+        inc     $c000+79
+        stz     $1
+
+          ; Set 'mark' to the future timeout time.
+          ; The C64 claims to time out after 64ms.
+          ; To be safe (not knowing where we are
+          ; in the current "tick" cycle), we wait 
+          ; ~0.066 - ~0.08s.
+            lda     kernel.ticks
+            clc
+            adc     #5      ; 4=0.66s + 1
+            sta     mark
+_loop
             lda     LISTNER_FIFO_STAT
             lsr     a
-            bcs     read_byte
+            bcc     _found
+
+          ; If timeouts are disabled, just keep trying...
+            lda     iec_timeout
+            bpl     _loop       ; no timeout check
+
+          ; Otherwise, keep trying until we reach mark.
+            lda     kernel.ticks
+            cmp     mark
+            bcc     _loop
+
+          ; Report a timeout; carry is already set.
+            lda     kernel.iec.TIMEOUT_READ                                            
+            bra     _out
+
+_found
+          ; Read the data.
             lda     LISTNER_DTA
+
+          ; Update our internal EOI flag.
             pha
             lda     LISTNER_FIFO_STAT
-            asl     a
+            and     #STAT_RX_EOI
+            sta     eoi
             pla
+
+_out
+          ; Restore I/O map.
+            stx     $1
+            plx
             rts
             
 
-send_data
+write_byte
             phx
             ldx     $1
             stz     $1
             sta     TALKER_DTA
             bra     ret_stat
 
-send_data_last
+write_last_byte
             phx
             ldx     $1
             stz     $1
             sta     TALKER_DTA_LAST
             bra     ret_stat
 
-send_atn
+send_atn_byte
+            stz     eoi
             phx
             ldx     $1
             stz     $1
             sta     TALKER_CMD
             bra     ret_stat
 
-send_atn_last
+send_atn_last_byte
+            stz     eoi
             phx
             ldx     $1
             stz     $1
@@ -77,15 +135,14 @@ send_atn_last
             bra     ret_stat
 
 ret_stat
-            lda     LISTNER_FIFO_STAT
-            and     #16
+            lda     LISTNER_FIFO_STAT   ; TODO: wait for send completed or error
+            and     #STAT_NO_ACK
             clc
             adc     #$ff
-            lda     #kernel.io.DEVICE_NOT_PRESENT
+            lda     #kernel.iec.NO_DEVICE   ; TODO: when is this set?
             stx     $1
             plx
             rts
-
 
             .send
             .endn

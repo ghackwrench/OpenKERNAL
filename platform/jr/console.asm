@@ -524,7 +524,7 @@ _loop   sta     (ptr),y
         bne     _loop
         rts
 
-scroll
+scroll bra scroll
         lda     #$c0
         sta     src+1
         sta     dest+1

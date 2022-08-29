@@ -5,11 +5,13 @@
             .cpu    "w65c02"
 
             .namespace  kernel
+iec         .namespace            
 
             .section    dp
 queue       .byte       ?   ; queue to detect when to signal end-of-data
 queued      .byte       ?   ; negative if a byte is in the queue
-            .ends
+status      .byte       ?   ; IEC status
+            .send
             
             .section    kernel
             
@@ -19,19 +21,28 @@ MISMATCH        =    16
 EOI             =    64
 NO_DEVICE       =   128
 
+readst
+            lda     status
+            rts
+
 error
 
     ; Internal function.  
     ; Updates io.status with the bits set in A.  
     ; Does not change the state of the carry.
     
-            ora     kernel.io.status
-            sta     kernel.io.status
+            ora     status
+            sta     status
             rts                  
 
+iecin
+            jsr     platform.iec.read_byte
+            bcs     error
+            rts
+
+iecout
 queue_data
 
-    ; Internal function.
     ; Delays writes of data bytes to the IEC bus by one character.
     ; This enables the stack to automatically determine when to
     ; signal that this is the last data byte in its sequence.
@@ -73,7 +84,7 @@ reset
     ; Internal function.
     ; Clears the write queue and the READST value.
     
-            stz     kernel.io.status
+            stz     status
             stz     queued
             rts
 
@@ -88,6 +99,11 @@ check_dev
             lda     #NO_DEVICE
 _out        rts
 
+settmo      
+    ; Implemented by platform; repeated here for consistency.
+    
+            jmp     platform.iec.settmo
+
 talk
 
     ; IN: A = device (8..15)
@@ -100,7 +116,7 @@ talk
             jsr     check_dev
             bcs     _error
             ora     #$40
-            jsr     platform.iec.send_atn
+            jsr     platform.iec.send_atn_byte
             bcs     _error
             rts
 _error      jmp     error
@@ -117,7 +133,7 @@ untalk
             jsr     flush_queue
             bcs     _error
             lda     #$5f
-            jsr     platform.iec.send_atn_last
+            jsr     platform.iec.send_atn_last_byte
             bcs     _error
             rts
 _error      jmp     error
@@ -134,7 +150,7 @@ listen
             jsr     check_dev
             bcs     _error
             ora     #$20
-            jsr     platform.iec.send_atn
+            jsr     platform.iec.send_atn_byte
             bcs     _error
             rts
 _error      jmp     error
@@ -151,7 +167,7 @@ unlstn
             jsr     flush_queue
             bcs     _error
             lda     #$3f
-            jsr     platform.iec.send_atn_last
+            jsr     platform.iec.send_atn_last_byte
             bcs     _error
             rts
 _error      jmp     error
@@ -173,7 +189,7 @@ lstnsa
             jsr     check_dev
             bcs     _error
             ora     #$60
-            jsr     platform.iec.send_atn
+            jsr     platform.iec.send_atn_byte
             bcs     _error
             rts
 _error      jmp     error
@@ -191,9 +207,6 @@ load
     ;
     ; NOTE: On error, A is a KERNAL error, NOT a READST vlaue!
 
-          ; Reset the iec queue and status
-            jsr     reset
-
           ; initialize dest; may be overriden later 
             stx     dest+0
             sty     dest+1
@@ -204,6 +217,9 @@ load
           ; Y = flag to use address in file over dest address above.
             ldy     cur_addr
             
+          ; Reset the iec queue and status
+            jsr     reset
+
           ; Open the file for read.  
           ; NOTE: returns a KERNAL error; must check READST as well!
             jsr     open_file_for_read
@@ -212,17 +228,23 @@ load
             ora     #0
             bne     _error
             
-          ; Read the file, sets X/Y to last address (+1).
+          ; Read the file, sets X/Y to last address.
             jsr     read_verify_pgm_data
             bcs     _error
             
             jsr     close_file
             bcs     _error
             
-            clc
 _out        rts
-_error      jmp     error
+_error      
+            jsr     error
+            clc
+            bra     _out
+    
 
+save
+    sec
+    rts
 
 open_file_for_read
 
@@ -248,7 +270,7 @@ _open
             bcs     _error
             
             lda     #$f0        ; Open channel 0
-            jsr     send_cmd
+            jsr     platform.iec.send_atn_byte
             bcs     _error
             
             jsr     send_fname
@@ -282,11 +304,11 @@ send_fname
             phy
             ldy     #0
 _loop
-            lda     (kerel.io.fname),y
+            lda     (fname),y
             jsr     IECOUT
             bcs     _out
             iny
-            cpy     kernel.io.fname_len
+            cpy     fname_len
             bcc     _loop
             clc
 _out
@@ -307,7 +329,7 @@ close_file
             bcs     _out
             
             lda     #$e0        ; Close channel 0
-            jsr     send_cmd
+            jsr     platform.iec.send_atn_byte
             bcs     _out
                         
             jsr     UNLSTN
@@ -353,15 +375,19 @@ _edest      nop
 
 _loop       
             jsr     platform.iec.read_byte
-            bcs     _error
-            jmp     (_op,x)
+            bcc     _found
+            cmp     #EOI
+            beq     _done
+_error      jmp     error   ; Forward the IEC error status.
+
+_found      jmp     (_op,x)
 _cont
             inc     dest
             bne     _next
             inc     dest+1
 _next       
             bcc     _loop
-            clc
+_done       clc
 _out            
             ldx     dest+0
             ldy     dest+1
@@ -379,8 +405,7 @@ _verify
             sec
             jsr     _error
             bra     _out    ; Mismatch still returns X/Y.
-_error      
-            jmp     error   ; Forward the IEC error status.
 
             .send
+            .endn
             .endn
