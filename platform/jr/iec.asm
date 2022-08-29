@@ -119,7 +119,6 @@ write_last_byte
             bra     ret_stat
 
 send_atn_byte
-            stz     eoi
             phx
             ldx     $1
             stz     $1
@@ -127,7 +126,6 @@ send_atn_byte
             bra     ret_stat
 
 send_atn_last_byte
-            stz     eoi
             phx
             ldx     $1
             stz     $1
@@ -135,8 +133,10 @@ send_atn_last_byte
             bra     ret_stat
 
 ret_stat
+            stz     eoi
             lda     LISTNER_FIFO_STAT   ; TODO: wait for send completed or error
             and     #STAT_NO_ACK
+      lda #0
             clc
             adc     #$ff
             lda     #kernel.iec.NO_DEVICE   ; TODO: when is this set?

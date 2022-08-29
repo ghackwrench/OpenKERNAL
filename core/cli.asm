@@ -32,8 +32,20 @@ cls         .null   "CLS"
 list        .null   "LIST"
 load        .null   "LOAD"
 drive       .null   "DRIVE"
+exec        .null   "EXEC"
+sys         .null   "SYS"
             .endn
 
+commands
+            .word   str.cls,    cls
+            .word   str.dir,    dir
+            .word   str.list,   list
+            .word   str.load,   load
+            .word   str.drive,  drive
+            .word   str.exec,   platform.far_exec
+;            .word   str.stat,   my_status
+;            .word   str.rds,    Read_Drive_Status
+            .byte   0           
 
 start
             jsr     banner
@@ -45,6 +57,11 @@ start
 shell
             lda     #8
             sta     device
+
+            stz     far_addr+0
+            stz     far_addr+1
+            stz     far_addr+2
+            stz     far_addr+3
             
             jsr     prompt
 _loop       jsr     get_cmd
@@ -83,7 +100,7 @@ _loop       phx
 do_cmd
             clc
             ldx     #0
-_loop       ldy     _table,x
+_loop       ldy     commands,x
             beq     _out
             inx
             inx
@@ -101,16 +118,7 @@ _next
 _out                    
             rts
 _call
-            jmp     (_table,x)
-_table
-            .word   str.cls,    cls
-            .word   str.dir,    dir
-            .word   str.list,   list
-            .word   str.load,   load
-            .word   str.drive,  drive
-;            .word   str.stat,   my_status
-;            .word   str.rds,    Read_Drive_Status
-            .byte   0           
+            jmp     (commands,x)
 
 strcmp
             sty     str_ptr

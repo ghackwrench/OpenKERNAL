@@ -145,6 +145,20 @@ _resume
         pla
         rti
 
+far_poke
+        ;sta     (kernel.shell.far_poke)
+        clc
+        rts
+
+far_exec
+        ldy     #1
+        lda     (kernel.shell.far_addr)
+        ora     (kernel.shell.far_addr),y
+        beq     _nope
+        jmp     (kernel.shell.far_addr)
+_nope   sec
+        rts
+        
         .send
         .endn
 

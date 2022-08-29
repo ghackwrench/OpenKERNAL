@@ -50,6 +50,12 @@ _loop
             bcc     _fill
             cmp     #128
             bcc     _putc
+_sys        
+            phy
+            ldy     #<str.sys
+            jsr     puts
+            ply
+            
 _fill       lda     #' '
           ; Check for a token...
 _putc       jsr     platform.console.putc
