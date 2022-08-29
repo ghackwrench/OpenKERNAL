@@ -239,25 +239,15 @@ _wrong
           ; Read the would-be load-address into src
             jsr     platform.iec.read_byte
             bcs     _error
-            sta     src+0
+            sta     dest+0
             jsr     platform.iec.read_byte
             bcs     _error
-            sta     src+1
+            sta     dest+1
             
             jsr     platform.iec.read_byte
             bcs     _error
             jsr     platform.iec.read_byte
             bcs     _error
-
-
-          ; Update dest ptr if the sub-channel (Y) is 1
-            tya
-            beq     _edest
-            lda     src+0
-            sta     dest+0
-            lda     src+1
-            sta     dest+1
-_edest      nop
 
 _loop       
             jsr     platform.iec.read_byte
