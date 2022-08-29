@@ -155,19 +155,15 @@ _setlfs
 
 
 load_pgx
-            lda     #0      ; Logical device # ... not meaningful here.
-            ldx     #8; device
-            ldy     #1      ; load at x/y below
-            jsr     SETLFS
-
-            ldx     #<$801
-            ldy     #>$801
-            lda     #0      ; read
-            
 
     ; IN:   File name set using SETNAM
     ;
     ; OUT:  X/Y = end address, or carry set and A = iec error.
+
+            lda     #0      ; Logical device # ... not meaningful here.
+            ldx     device
+            ldy     #0      ; Not used
+            jsr     SETLFS
 
           ; Reset the iec queue and status
             jsr     kernel.iec.reset
