@@ -236,18 +236,22 @@ _signature  jsr     platform.iec.read_byte
             sta     $c000,x
 _wrong      
                         
-          ; Read the would-be load-address into src
+          ; Read the would-be load-address into dest and addr
             jsr     platform.iec.read_byte
             bcs     _error
             sta     dest+0
+            sta     far_addr+0
             jsr     platform.iec.read_byte
             bcs     _error
             sta     dest+1
+            sta     far_addr+1
             
             jsr     platform.iec.read_byte
             bcs     _error
             jsr     platform.iec.read_byte
             bcs     _error
+            stz     far_addr+2
+            stz     far_addr+3
 
 _loop       
             jsr     platform.iec.read_byte
