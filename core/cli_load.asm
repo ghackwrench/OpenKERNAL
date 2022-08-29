@@ -220,16 +220,22 @@ read_verify_pgm_data
     ; Out:  X:Y = last address read/verified
     ;       On error, Carry set, and A = IEC error (READST value)
 
-
-            jsr     platform.iec.read_byte
-            bcs     _error
-            jsr     platform.iec.read_byte
-            bcs     _error
-            jsr     platform.iec.read_byte
-            bcs     _error
-            jsr     platform.iec.read_byte
-            bcs     _error
-
+ ldx #2
+ stx $1
+          ; Make sure it's a PGX file
+            ldx     #0
+_signature  jsr     platform.iec.read_byte
+            bcs     _wrong
+  sta $c000,x
+            cmp     _ident,x
+            bne     _wrong
+            inx
+            cpx     #4
+            bne     _signature
+            lda     $32
+            sta     $c000,x
+_wrong      
+                        
           ; Read the would-be load-address into src
             jsr     platform.iec.read_byte
             bcs     _error
@@ -267,6 +273,7 @@ _out
             ldx     dest+0
             ldy     dest+1
             rts          
+_ident      .text   "PGX",0 ; 6502 family
 
 
 load_pgx2
