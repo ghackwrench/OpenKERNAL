@@ -17,15 +17,15 @@ far_dest    .fill       4
             .section    kernel
 
 extensions
-        .text   "PGX", load_pgx
         .text   "PRG", load_prg
         .text   "prg", load_prg
+        .text   "PGX", load_pgx
         .text   "pgx", load_pgx
         .byte   0
 
 load
-  lda #2
-  sta $1
+        stz     far_addr+0
+        stz     far_addr+1
 
         jsr     find_arg
         bcc     _quote
@@ -140,18 +140,139 @@ load_prg
             lda     (fname)
             cmp     #'$'
             bne     _setlfs
-            ldy     #0      ; Directory requested, override load address.
+            jmp     dir
 
 _setlfs     
             lda     #0      ; Logical device # ... not meaningful here.
             ldx     device
+            ldy     #1      ; Use native load address
             jsr     SETLFS
             
           ; Load the data
             lda     #0      ; load, not verify
-            ldx     #<$801  ; in case of directory
-            ldy     #>$801  ; in case of directory
-            jmp     LOAD
+            jsr     LOAD
+            bcs     _out
+
+            jmp     find_sys
+            
+_out        rts
+
+find_sys
+
+          ; Copy the embedded load address to far_addr
+            lda     src+0
+            sta     far_addr+0
+            lda     src+1
+            sta     far_addr+1
+
+          ; If the embedded address is not $801, it is the start addr.
+            lda     src+0
+            cmp     #<$801
+            bne     _done
+
+            lda     src+1
+            cmp     #>$801
+            bne     _done
+
+          ; BASIC header; get far_addr from a SYS call.
+            stz     far_addr+0
+            stz     far_addr+1
+
+          ; BASIC parser
+            ldy     #0
+_line       
+          ; File ends when the would-be next address is zero.
+            jsr     _fetch
+            sta     tos_l       ; tmp
+            jsr     _fetch
+            ora     tos_l
+            beq     _done
+
+          ; Skip the line number
+            jsr     _fetch
+            jsr     _fetch          
+            
+          ; Scan the rest of the line
+_loop       
+            jsr     _fetch
+            beq     _line
+            bpl     _loop            
+            cmp     #$9e    ; SYS
+            bne     _loop
+            
+          ; SYS token found; skip any following spaces.
+_spaces     jsr     _fetch
+            ;beq     _done
+            ;cmp     #' '
+            ;beq     _spaces          
+
+          ; atoi the following digits.
+_digits     cmp     #'0'
+            bcc     _done
+            cmp     #'9'+1
+            bcs     _done
+            sec
+            sbc     #'0'
+            jsr     mul_add
+            jsr     _fetch
+            bra     _digits
+                        
+_fetch
+            lda     (src),y
+            iny
+            bne     _fetched
+            inc     src+1
+_fetched
+            ora     #0
+            rts  
+            
+_done       
+            clc
+            rts
+
+mul_add
+          ; Multiply far_addr by 10.
+            pha
+            jsr     _copy
+            jsr     _x2
+            jsr     _x2
+            jsr     _add
+            jsr     _x2
+            pla
+
+          ; Add the decimal digit in A.
+            sta     far_addr+2
+            stz     far_addr+3
+            jsr     _add
+
+          ; Zero the upper bits
+            stz     far_addr+2
+            stz     far_addr+3
+            rts            
+
+_copy       
+            lda     far_addr+0
+            sta     far_addr+2
+            lda     far_addr+1
+            sta     far_addr+3
+            rts
+_x2
+            lda     far_addr+0
+            asl     a
+            sta     far_addr+0
+            lda     far_addr+1
+            rol     a
+            sta     far_addr+1
+            rts            
+_add        
+            clc
+            lda     far_addr+0
+            adc     far_addr+2
+            sta     far_addr+0
+            lda     far_addr+1
+            adc     far_addr+3
+            sta     far_addr+1
+            rts
 
 
 load_pgx

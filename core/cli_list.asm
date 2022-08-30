@@ -45,11 +45,13 @@ _line
 _loop       
             jsr     _fetch
             beq     _eol
-            
+            bmi     _ext
             cmp     #32
-            bcc     _fill
-            cmp     #128
-            bcc     _putc
+            bcs     _putc
+            bra     _fill
+_ext        cmp     #$9e
+            beq     _sys
+            bra     _fill
 _sys        
             phy
             ldy     #<str.sys

@@ -24,7 +24,7 @@ device      .byte       ?
 strings:
 str         .namespace
 unknown     .text   "?", 13, 0
-prompt      .text   13,"READY",0
+prompt      .text   13,"READY DEVICE",0
 dir         .null   "DIR"
 stat        .null   "STAT"
 rds         .null   "RDS"
@@ -32,7 +32,7 @@ cls         .null   "CLS"
 list        .null   "LIST"
 load        .null   "LOAD"
 drive       .null   "DRIVE"
-exec        .null   "EXEC"
+run         .null   "RUN"
 sys         .null   "SYS"
             .endn
 
@@ -42,9 +42,7 @@ commands
             .word   str.list,   list
             .word   str.load,   load
             .word   str.drive,  drive
-            .word   str.exec,   platform.far_exec
-;            .word   str.stat,   my_status
-;            .word   str.rds,    Read_Drive_Status
+            .word   str.run,    platform.far_exec
             .byte   0           
 
 start

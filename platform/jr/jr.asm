@@ -151,13 +151,18 @@ far_store
         rts
 
 far_exec
-        ldy     #1
-        lda     (kernel.shell.far_addr)
-        ora     (kernel.shell.far_addr),y
+        lda     kernel.shell.far_addr+0
+        ora     kernel.shell.far_addr+1
         beq     _nope
-        jmp     (kernel.shell.far_addr)
-_nope   sec
+        jsr     _call
+        clc
         rts
+_nope   
+        lda     #kernel.FILE_NOT_FOUND
+        sec
+        rts
+_call   
+        jmp     (kernel.shell.far_addr)
         
         .send
         .endn
