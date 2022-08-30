@@ -12,6 +12,8 @@
             .section    dp
 far_addr    .fill       4
 far_dest    .fill       4
+far_count   .fill       4
+addr_len    .byte       ?
             .send            
 
             .section    kernel
@@ -21,6 +23,8 @@ extensions
         .text   "prg", load_prg
         .text   "PGX", load_pgx
         .text   "pgx", load_pgx
+        .text   "PGZ", load_pgz
+        .text   "pgz", load_pgz
         .byte   0
 
 load
@@ -383,6 +387,173 @@ far_inc
             bne     _done
             inc     3,x
 _done       rts            
+
+
+load_pgz    ; TODO: share this code with pgx
+
+    ; IN:   File name set using SETNAM
+    ;
+    ; OUT:  X/Y = end address, or carry set and A = iec error.
+
+            lda     #0      ; Logical device # ... not meaningful here.
+            ldx     device
+            ldy     #0      ; Not used
+            jsr     SETLFS
+
+          ; Reset the iec queue and status
+            jsr     kernel.iec.reset
+
+          ; Open the file for read.  
+          ; NOTE: returns a KERNAL error; must check READST as well!
+            jsr     kernel.iec.open_file_for_read
+            bcs     _out
+            jsr     READST
+            ora     #0
+            bne     _error
+            
+          ; Read the file, sets X/Y to last address.
+            jsr     read_pgz_data
+            bcc     _close
+            
+          ; Try to close the file while preserving the original error.
+            pha
+            jsr     kernel.iec.close_file
+            pla
+            sec
+            bra     _error            
+_close
+            jsr     kernel.iec.close_file
+            bcs     _error
+            
+_out        rts
+_error      
+            jsr     error
+            clc
+            bra     _out
+    
+
+read_pgz_data
+
+  lda #2
+  sta $1
+
+    ; Internal funciton.
+    ; Implements load-body for .pgz files.
+    ;
+    ; IN:   SETNAM and SETLFS have been called.
+    ;
+    ; Out:  X:Y = end address, far_addr = exec address
+    ;       On error, Carry set, and A = IEC error (READST value)
+
+            jsr     IECIN
+            bcs     _error
+            cmp     #'Z'
+            beq    _pgz24
+            cmp     #'z'
+            beq     _pgz32
+_mismatch   lda     #kernel.iec.MISMATCH
+            sec            
+            jmp     _error
+            
+_pgz24      lda     #3
+            sta     addr_len
+            bra     _read
+            
+_pgz32      lda     #4
+            sta     addr_len
+            bra     _read
+
+_read
+            ldx     #0
+_zero       
+            stz     far_addr,x
+            stz     far_dest,x
+            stz     far_count,x
+            inx
+            cpx     #4
+            bne     _zero
+
+_block
+          ; Read the dest address.
+            ldx     #0
+            jsr     IECIN
+            bcs     _end
+            bra     _next
+_dest       jsr     IECIN
+            bcs     _error
+_next       sta     far_dest,x
+            inx
+            cpx     addr_len
+            bne     _dest
+
+          ; Read the byte count into far_count
+            ldx     #0
+_count      jsr     IECIN
+            bcs     _error
+            sta     far_count,x
+            inx
+            cpx     addr_len
+            bne     _count
+         
+          ; See if this is an empty block (start addr)
+            jsr     test_far_count
+            bne     _loop       ; Nope, read in the data
+            
+          ; Empty block implies the block address is the start address
+            ldx     #0
+_copy       lda     far_dest,x
+            sta     far_addr,x
+            inx
+            cpx     addr_len
+            bne     _copy            
+            
+            bra     _block
+
+_loop       
+            jsr     IECIN
+            bcc     _found
+            eor     #kernel.iec.EOI
+            beq     _mismatch
+_error      jmp     error   ; Forward the IEC error status.
+
+_found
+  ;ldx far_dest
+  ;sta $c000,x
+  sta $c000+79
+            jsr     platform.far_store
+            ldx     #far_dest
+            jsr     far_inc
+            jsr     dec_far_count
+            jsr     test_far_count
+            bne     _loop
+            bra     _block
+            
+_end
+            eor     #kernel.iec.EOI
+            bne     _error
+            clc
+            rts
+
+
+dec_far_count
+            clc     ; Subtracting one.
+            ldx     #0                        
+_loop       lda     far_count,x
+            sbc     #0
+            sta     far_count,x
+            bcs     _done
+            inx
+            cpx     #4
+            bne     _loop
+_done       clc
+            rts            
+
+test_far_count
+            lda     far_count+0
+            ora     far_count+1
+            ora     far_count+2
+            ora     far_count+3
+            rts
 
             .send
             .endn
