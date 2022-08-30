@@ -295,7 +295,9 @@ state_kbd1
 
 state_kbd2     
         ; Replace with a local state machine.
+            phy
             jsr     hardware.kbd2.accept
+            ply
             rts
 
 state_mouse0

@@ -13,7 +13,7 @@ kbd2    .namespace
             .section    kmem
 e0          .byte   ?
 release     .byte   ?
-flags:      .fill 32
+flags:      .fill 16
 
             .send
             
@@ -63,25 +63,25 @@ _etab
 _end        = * - _etab
 
 accept:
-            cmp #$f0
+            cmp #$f0    ; Key release
             beq _release
 
-            cmp #$e0
+            cmp #$e0    ; Media/extended prefix
             beq _e0
 
-            cmp #$e1
+            cmp #$e1    ; Pause...
             beq _send
 
-            cmp #$84
+            cmp #$84    ; Apparently true
             bcs _drop
 
-            ldx e0,b
+            ldx e0
             beq _std
             jsr search
             bra _code
 _std
             tax
-            lda keymap,b,x
+            lda keymap,x
 
 _code       ldx release
             beq _press
@@ -91,17 +91,17 @@ _code       ldx release
             and #$f0
             cmp #16
             bne _drop
-            stz flags,b,x
+            stz flags-16,x
             
-_drop       stz e0,b
-            stz release,b
+_drop       stz e0
+            stz release
             rts
 
 _search     jsr     search
             bra     _code
 
 
-_release    sta release,b
+_release    sta release
             rts
 
 _e0         sta e0,b
@@ -112,7 +112,7 @@ _press      jsr _drop
             and #$f0
             cmp #16
             bne _key
-            sta flags,b,x
+            sta flags-16,x
             rts
 
 _key        txa
@@ -133,9 +133,9 @@ _end        rts
 _flags      pha
             lda #0
             ldx #0
-_loop       ldy flags+16,b,x
+_loop       ldy flags,x
             beq _next
-            ora _meta,b,x
+            ora _meta,x
 _next       inx
             cpx #9
             bne _loop
