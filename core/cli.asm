@@ -34,7 +34,20 @@ load        .null   "LOAD"
 drive       .null   "DRIVE"
 run         .null   "RUN"
 sys         .null   "SYS"
+help        .null   "HELP"
+intro       .text   13,"Type 'help' for help.",13,0
             .endn
+
+help_text      
+            .text   13,"Supported commands:",13
+            .text   "   cls         Clears the screen.",13
+            .text   "   drive #     Changes the drive to #.",13
+            .text   "   dir         Displays the directory.",13
+            .text   "   load",$22,"fname",$22," Loads the given file ',1'.", 13
+            .text   "   list        LISTs directories and simple programs.",13
+            .text   "   run         Runs loaded programs.",13
+            .text   "   help        Shows this help.",13
+            .text   13,0
 
 commands
             .word   str.cls,    cls
@@ -43,13 +56,24 @@ commands
             .word   str.load,   load
             .word   str.drive,  drive
             .word   str.run,    platform.far_exec
+            .word   str.help,   help
             .byte   0           
+
+help
+            lda     #<help_text
+            sta     src+0
+            lda     #>help_text
+            sta     src+1
+            jmp     kernel.puts
 
 start
             jsr     banner
 
             lda     #>strings
             sta     str_ptr+1
+
+            ldy     #<str.intro
+            jsr     puts
             bra     shell
 
 shell

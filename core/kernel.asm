@@ -132,6 +132,9 @@ banner
             sta     src
             lda     #>copyright
             sta     src+1
+            jmp     puts
+
+puts            
             ldy     #0
 _loop       lda     (src),y
             beq     _done
@@ -140,7 +143,9 @@ _loop       lda     (src),y
             bne     _loop
             inc     src+1
             bra     _loop
-_done       rts
+_done       
+            clc
+            rts
 
 error
         pha
