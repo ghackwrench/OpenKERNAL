@@ -10,7 +10,7 @@
 64TASS	?= 64tass
 
 # Default target.
-# Load at $e000, includes a simple shell.
+# Load at $c000, includes a simple shell.
 always: bin/C256jr.bin
 
 # OpenKERNAL bundled with CBM BASIC V2 (you supply the ROM).
@@ -66,7 +66,7 @@ C256JR	= \
 	hardware/ps2_kbd2.asm \
 	hardware/keys.asm \
 
-# Make a KERNAL for the C256jr.  The .bin should be loaded at $e000.
+# Make a KERNAL for the C256jr.  The .bin should be loaded at $c000.
 
 bin/C256jr.bin: Makefile $(CORE) $(C256JR)
 	@echo Building the kernel
