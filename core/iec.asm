@@ -305,6 +305,7 @@ send_fname
             ldy     #0
 _loop
             lda     (fname),y
+            jsr     to_upper
             jsr     IECOUT
             bcs     _out
             iny
@@ -314,6 +315,15 @@ _loop
 _out
             ply
             rts
+
+to_upper
+        cmp     #'a'
+        bcc     _okay
+        cmp     #'z'+1
+        bcs     _okay
+        eor     #$20
+_okay   clc
+        rts        
 
 close_file
 
