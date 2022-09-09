@@ -138,7 +138,7 @@ puts
             ldy     #0
 _loop       lda     (src),y
             beq     _done
-            jsr     platform.console.putc
+            jsr     CHROUT
             iny
             bne     _loop
             inc     src+1
@@ -217,11 +217,15 @@ _next       inx
             inx
             bra     _loop            
 _table      
-            .word   cbm_bytes, $a004, cbm_start ; Check for CBM BASIC
-            .word   cli_bytes, $e000, cli_start ; Always last
+            .word   cbm_bytes,      $a004, cbm_start    ; Check for CBM BASIC
+            .word   bas02_bytes,    $8004, bas02_start  ; Check for BASIC02
+            .word   cli_bytes,      $e000, cli_start    ; Always last
 
 cbm_bytes   .null   "CBMBASIC"
 cbm_start   jmp     (basic)
+
+bas02_bytes .null   "BASIC02"
+bas02_start jmp     $8000
 
 cli_bytes   .null   ""          ; Fall-through match.
 cli_start   jmp     shell.start
