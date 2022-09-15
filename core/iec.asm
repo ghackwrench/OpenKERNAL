@@ -57,8 +57,9 @@ _swap
             pha
             lda     queue
             jsr     platform.iec.write_byte
-            pla
-            bcs     error
+            bcc     _okay
+            jsr     error
+_okay       pla
             sta     queue
 _out        rts
 
@@ -113,6 +114,7 @@ talk
     ;       carry will be set, and A will contain the value to
     ;       be returned by READST.
     
+            jsr     reset
             jsr     check_dev
             bcs     _error
             ora     #$40
@@ -147,6 +149,7 @@ listen
     ;       carry will be set, and A will contain the value to
     ;       be returned by READST.
     
+            jsr     reset
             jsr     check_dev
             bcs     _error
             ora     #$20
@@ -367,11 +370,11 @@ read_verify_pgm_data
 _emode      nop            
 
           ; Read the would-be load-address into src
-            jsr     platform.iec.read_byte
-            bcs     _error
+            jsr     IECIN
+            bcs     _notfound
             sta     src+0
-            jsr     platform.iec.read_byte
-            bcs     _error
+            jsr     IECIN
+            bcs     _notfound
             sta     src+1
 
           ; Update dest ptr if the sub-channel (Y) is 1
@@ -384,12 +387,15 @@ _emode      nop
 _edest      nop
 
 _loop       
-            jsr     platform.iec.read_byte
+            jsr     IECIN
             bcc     _found
             cmp     #EOI
             beq     _done
 _error      jmp     error   ; Forward the IEC error status.
-
+_notfound   jsr     error   ; Forward the IEC error status.
+            lda     #FILE_NOT_FOUND
+            sec
+            rts
 _found      jmp     (_op,x)
 _cont
             inc     dest

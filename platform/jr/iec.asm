@@ -70,12 +70,12 @@ _read
             sta     mark
 _loop
             lda     LISTNER_FIFO_STAT
-            lsr     a
+            lsr     a       ; Carry set if fifo is empty
             bcc     _found
 
           ; If timeouts are disabled, just keep trying...
             lda     iec_timeout
-            bpl     _loop       ; no timeout check
+            ;bpl     _loop       ; no timeout check
 
           ; Otherwise, keep trying until we reach mark.
             lda     kernel.ticks
@@ -119,6 +119,9 @@ write_last_byte
             bra     ret_stat
 
 send_atn_byte
+        smb     1,$1
+        inc     $c000+78
+        stz     $1
             phx
             ldx     $1
             stz     $1
@@ -136,10 +139,11 @@ ret_stat
             stz     eoi
             lda     LISTNER_FIFO_STAT   ; TODO: wait for send completed or error
             and     #STAT_NO_ACK
-      lda #0
             clc
-            adc     #$ff
+            beq     _out
+            sec
             lda     #kernel.iec.NO_DEVICE   ; TODO: when is this set?
+_out        
             stx     $1
             plx
             rts

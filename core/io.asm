@@ -208,11 +208,6 @@ reopen
             rts
           
 
-readst 
-            lda     io_last
-            lda #0
-            rts
-
 setlfs      
             sta     cur_logical
             stx     cur_device
