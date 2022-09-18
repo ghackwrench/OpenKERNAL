@@ -415,12 +415,14 @@ reverse
 lf      rts
        
 cr
+.if false
         ldy     cur_x
         lda     #32
 _loop   sta     (ptr),y
         iny
         cpy     #COLS
         bcc     _loop
+.endif
         stz     cur_x
 _lf     
         ldy     cur_y
