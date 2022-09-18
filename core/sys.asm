@@ -77,12 +77,6 @@ scnkey
             ; May be used to force a CIA scan.
             rts
 
-stop
-    lda #1
-    clc
-    rts
-
-
 iobase
         ldx     #$dc
         ldy     #$00

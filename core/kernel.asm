@@ -264,7 +264,7 @@ LOAD        jmp     iec.load
 SAVE        jmp     iec.save
 SETTIM      jmp     settim
 RDTIM       jmp     rdtim
-STOP        jmp     stop
+STOP        jmp     keyboard.stop
 GETIN       jmp     io.getin
 CLALL       jmp     io.clall
 UDTIM       jmp     udtim
