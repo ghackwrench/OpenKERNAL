@@ -415,6 +415,8 @@ _putc
         jmp     insert
 
 _ctrl
+        cmp #5  ; CBM white; occludes ^e->eol below
+        beq cbm
         cmp     #17
         bcc     _indexed
         cmp     #27     ; esc
@@ -431,7 +433,7 @@ _table
         .ctrl   'b', left
         .ctrl   'c', ignore
         .ctrl   'd', ignore
-        .ctrl   'e', end        ; Also, CBM white...
+        .ctrl   'e', end
         .ctrl   'f', right   
         .ctrl   'g', bell
         .ctrl   'h', backspace
@@ -470,9 +472,7 @@ _table
         .entry  $13, home
         .entry  $14, backspace
         .entry  $1d, right
-
-        .entry  $d3, cls
-        .entry  $93, home
+        .entry  $93, cls
         .entry  $91, lf
 _end    = * - _table
 
@@ -594,6 +594,10 @@ insert
       ; Someone else can do PETSCII
         ldy     cur_x
         sta     (ptr),y
+        inc     $1
+        lda     color
+        sta     (ptr),y
+        dec     $1
         iny
         cpy     #COLS
         beq     cr
@@ -633,7 +637,14 @@ _loop   cmp     _table,x
         cpx     #_end
         bne     _loop
         rts
-_found  stx     color
+_found  
+        txa
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        ora     #6
+        sta     color
         rts
 _table  
         .byte   $90 ; color.black        
