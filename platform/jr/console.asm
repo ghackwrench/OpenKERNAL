@@ -23,9 +23,6 @@ TEXT_LUT_BG	 = $D840
 TEXT_MEM         = $C000 	; IO Page 2
 COLOR_MEM        = $C000 	; IO Page 3
 
-* = $c000
-font        .binary    "Bm437_PhoenixEGA_8x8.bin", 0, $400
-
             .section    dp
 src         .word   ?
 dest        .word   ?
@@ -243,6 +240,17 @@ _nc         asl     a
             lda     ptr+1
             adc     #$c0
             sta     ptr+1
+            
+          ; Save/restore the state of the i/o bit
+          ; while moving the cursor.
+            lda     $1
+            pha
+            lda     #2
+            sta     $1
+            jsr     cursor
+            pla
+            sta     $1
+            rts
 
 cursor
         ldy     cur_x
@@ -415,12 +423,14 @@ reverse
 lf      rts
        
 cr
+.if false   ; Don't clear to EOL.
         ldy     cur_x
         lda     #32
 _loop   sta     (ptr),y
         iny
         cpy     #COLS
         bcc     _loop
+.endif        
         stz     cur_x
 _lf     
         ldy     cur_y

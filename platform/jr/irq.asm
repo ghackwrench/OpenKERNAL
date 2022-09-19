@@ -158,7 +158,7 @@ _reg1       stz     $1
             lda     bit,b,y
             sta     INT_PENDING_REG1
             ldx     irq1,y
-            ;jsr     kernel.device.data
+            jsr     kernel.device.data
             bra     _reg1
 
 _reg2       rts
