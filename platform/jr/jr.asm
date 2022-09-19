@@ -6,13 +6,13 @@
 
             .cpu    "w65c02"
 
+*           = $fff6 ; Keep the Jr's CPU busy during code upload.
+wreset      jmp     wreset
+
 *           = $fffa ; Hardware vectors.
             .word   platform.hw_nmi
             .word   platform.hw_reset
             .word   platform.hw_irq
-
-*           = $ff00 ; Keep the Jr's CPU busy during code upload.
-wreset      jmp     wreset
 
 platform    .namespace
 
@@ -74,7 +74,7 @@ hw_reset:
         
       ; Switch to MMU 3 and chain to the kernel.
         lda     #%00110011  ; LUT3 mapped and pre-set for edit.
-        sta     $0
+        ;sta     $0
         jmp     kernel.start
 _error  jmp     kernel.error
 

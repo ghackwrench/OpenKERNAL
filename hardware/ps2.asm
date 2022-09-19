@@ -56,7 +56,6 @@ dev_open
             stz     self.rx1,x
             stz     self.rx2,x
             stz     self.rx3,x
-            jsr     hardware.kbd1.init
             jsr     hardware.kbd2.init
 
           ; Wait for reset success
@@ -167,7 +166,6 @@ state       .struct
 reset       .word   wait_reset
 ack         .word   wait_ack
 data        .word   wait_data
-kbd1        .word   state_kbd1      ; Mode-1 keyboard state machine
 kbd2        .word   state_kbd2      ; Mode-2 keyboard state machine
 mouse0      .word   state_mouse0    ; Original 3-byte state machine
 end         .ends
@@ -228,15 +226,7 @@ wait_auto
             sta     self.rx2,b,y
             pla
             sta     self.rx3,b,y
-.if false
-          ; Mode1 keyboard?
-_check1     lda     self.rx3,b,y
-            bpl     _not1
-            and     #$7f
-            cmp     self.rx2,b,y
-            beq     _mode1
-_not1       nop
-.endif            
+
           ; Mode2 keyboard?  
 _check2     lda     self.rx2,b,y
             cmp     #$f0    ; release
@@ -254,18 +244,6 @@ _not2       nop
 
 _out        rts
 
-_mode1      
-          ; Switch to the mode1 machine
-            lda     #state.kbd1
-            sta     self.state,b,y
-
-          ; Forward the last keypress to the machine.
-            lda     self.rx2,b,y
-            jsr     state_kbd1
-            lda     self.rx3,b,y
-            jsr     state_kbd1
-
-            rts
 _mode2
           ; Switch to the mode2 machine.
             lda     #state.kbd2
@@ -286,11 +264,6 @@ _mouse
           ; switch to standard 3-byte mouse machine.
             lda     #state.mouse0
             sta     self.state,b,y
-            rts
-
-state_kbd1
-        ; Replace with a local state machine.
-            jsr     hardware.kbd1.accept
             rts
 
 state_kbd2     

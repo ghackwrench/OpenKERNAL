@@ -62,7 +62,6 @@ C256JR	= \
 	hardware/hardware.asm \
 	hardware/i8042.asm \
 	hardware/ps2.asm \
-	hardware/ps2_kbd1.asm \
 	hardware/ps2_kbd2.asm \
 	hardware/keys.asm \
 
