@@ -35,7 +35,7 @@ cur_x       .byte   ?
 cur_y       .byte   ?
 ptr         .word   ?
 color       .byte   ?
-scratch     .byte   ?
+rev         .byte   ?
             .send
 
 
@@ -45,6 +45,7 @@ init
             jsr     TinyVky_Init
             lda     #$e6
             sta     color
+            stz     rev
             jsr     cls
 
             clc
@@ -344,18 +345,6 @@ cursor
         ldx     #3      ; color memory
         stx     $1
         lda     (ptr),y
-.if false
-        stz     scratch
-        asl     a
-        rol     scratch
-        asl     a
-        rol     scratch
-        asl     a
-        rol     scratch
-        asl     a
-        rol     scratch
-        ora     scratch
-.endif        
         stz     $1
         sta     VKY_TXT_CURSOR_COLR_REG
 
@@ -483,8 +472,9 @@ _table
         .entry  $13, home
         .entry  $14, backspace
         .entry  $1d, right
-        .entry  $93, cls
         .entry  $91, lf
+        .entry  $92, unreverse
+        .entry  $93, cls
 _end    = * - _table
 
 entry   .macro  code, function
@@ -493,19 +483,14 @@ entry   .macro  code, function
         .endm
 
 reverse
-        stz     scratch
-        asl     a
-        rol     scratch        
-        asl     a
-        rol     scratch        
-        asl     a
-        rol     scratch        
-        asl     a
-        rol     scratch        
-        ora     scratch
-        sta     color
+        ldx     #128
+        stx     rev
         rts
- 
+        
+unreverse
+        stz     rev
+        rts
+
 lf      rts
        
 cr
@@ -596,6 +581,7 @@ insert
       ; ASCII for the rest
       ; Someone else can do PETSCII
         ldy     cur_x
+        ora     rev
         sta     (ptr),y
         inc     $1
         lda     color
