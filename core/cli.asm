@@ -194,7 +194,7 @@ drive
 _done       
             rts
 _set
-            sbc     #'0'
+            sbc     #'0'    ; Carry set by cmp
             sta     device
             clc
             bra     _done                        
@@ -220,11 +220,16 @@ dir
             ldx     #<$801
             ldy     #>$801
             jsr     LOAD
-            bcs     _out    ; TODO: print the error
+            bcs     _out
+            jsr     READST
+            beq     _list
+            lda     #DEVICE_NOT_PRESENT   
+            sec         
+            bra     _out
             
+_list     
           ; Show the data
             jsr     list
-            
 _out
             ply
             plx

@@ -120,6 +120,7 @@ write_last_byte
 
 send_atn_byte
         smb     1,$1
+        rmb     1,$1
         inc     $c000+78
         stz     $1
             phx
@@ -137,7 +138,8 @@ send_atn_last_byte
 
 ret_stat
             stz     eoi
-            lda     LISTNER_FIFO_STAT   ; TODO: wait for send completed or error
+            jsr     delay500us  ; Better would be wait for empty tx fifo or timeout.
+            lda     LISTNER_FIFO_STAT
             and     #STAT_NO_ACK
             clc
             beq     _out
@@ -146,6 +148,24 @@ ret_stat
 _out        
             stx     $1
             plx
+            rts
+
+delay500us
+            lda     #50         ; Kill ~500us
+_loop       jsr     _delay10us
+            dec     a
+            bne     _loop
+
+_delay10us  jsr     _delay2
+_delay8     jsr     _delay4
+_delay4     jsr     _delay2
+_delay2     jsr     _delay1
+_delay1   ; Kill 8 clock cycles ... slightly larger than 1Mhz = 1us
+            nop
+            nop
+            nop
+            nop
+            nop            
             rts
 
             .send

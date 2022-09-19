@@ -220,9 +220,6 @@ load
           ; Y = flag to use address in file over dest address above.
             ldy     cur_addr
             
-          ; Reset the iec queue and status
-            jsr     reset
-
           ; Open the file for read.  
           ; NOTE: returns a KERNAL error; must check READST as well!
             jsr     open_file_for_read
@@ -240,8 +237,8 @@ load
             
 _out        rts
 _error      
-            jsr     error
-            clc
+            jsr     error   ; Update status for READST.
+            clc             ; I/O errors aren't KERANL errors...
             bra     _out
     
 
@@ -263,7 +260,7 @@ open_file_for_read
 
             lda     fname_len
             bne     _open
-            lda     #MISSING_FILE_NAME
+            lda     #MISSING_FILE_NAME  ; Only KERNAL error returned.
             sec
             rts
             
