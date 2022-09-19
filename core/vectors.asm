@@ -21,7 +21,7 @@ ivec_start
             .word   io.clrchn
             .word   io.chrin
             .word   io.chrout
-            .word   stop
+            .word   keyboard.stop
             .word   io.getin
             .word   io.clall
             .word   user

@@ -10,6 +10,7 @@ keyboard    .namespace
             .section    kmem
 head        .byte       ?
 tail        .byte       ?
+ctrl_c      .byte       ?
             .send
             
 BUF_SIZE = 16
@@ -23,12 +24,45 @@ buf         .fill       BUF_SIZE
 init
             stz     head
             stz     tail
+            stz     ctrl_c
+            rts
+stop
+          ; See if a ctrl_c has been queued.
+            lda     ctrl_c
+            bne     _stop
+
+          ; No stop detected.
+            lda     #$ff
+            clc
+            rts
+
+_stop
+          ; Nominally reset the I/O paths.
+            jsr     CLRCHN
+
+          ; Flush the keyboard queue.
+            sei
+            stz     head
+            stz     tail
+            cli
+
+          ; Clear the ctrl_c condition.
+            stz     ctrl_c
+
+          ; Return 'stopped' status.
+            lda #0
+            sec
             rts
 
 enque
     ; A = character to enqueue.
     ; Carry set if the queue is full.
     ; Code is thread-safe to support multiple event sources.
+
+            cmp     #3      ; ctrl_c
+            bne     _enque
+            sta     ctrl_c
+_enque
             phx
             sec     ; Pre-emptively set carry
             php     ; Carry is on the stack.

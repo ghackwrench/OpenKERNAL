@@ -6,17 +6,18 @@
 
             .cpu    "w65c02"
 
+*           = $fff6 ; Keep the Jr's CPU busy during code upload.
+wreset      jmp     wreset
+
 *           = $fffa ; Hardware vectors.
             .word   platform.hw_nmi
             .word   platform.hw_reset
             .word   platform.hw_irq
 
-*           = $ff00 ; Keep the Jr's CPU busy during code upload.
-wreset      jmp     wreset
-
 platform    .namespace
 
             .section    dp
+mmuctl      .byte       ?       ; Holds $0 during interrupt processing.
 iomap       .byte       ?       ; Holds $1 during interrupt processing.
 ptr         .word       ?       ; for far_write
 tmp         .byte       ?       ; for far_write
@@ -61,6 +62,9 @@ hw_reset:
         bne     upload  ; Enter "wait for upload" mode.
         inc     booted
 
+      ; Set up MMU LUTs
+        jsr     mmu_init
+
       ; Initialize the hardware
         jsr     init
         bcs     _error
@@ -68,7 +72,9 @@ hw_reset:
       ; Default $c000 to general I/O.
         stz     $1
         
-      ; Chain to the kernel
+      ; Switch to MMU 3 and chain to the kernel.
+        lda     #%00110011  ; LUT3 mapped and pre-set for edit.
+        sta     $0
         jmp     kernel.start
 _error  jmp     kernel.error
 
@@ -87,6 +93,33 @@ _loop   lda     (kernel.src),y
 _done   jmp     wreset       
 _msg    .null   "Upload"
 
+
+mmu_init
+
+      ; Set up MMU LUTs 1-3 to match MMU0 while interrupts are off.
+        lda     #%10000000  ; Edit MMU 0 (MMU0 mapped)
+        jsr     _fill
+        lda     #%10010000  ; Edit MMU 1 (MMU0 mapped)
+        jsr     _fill
+        lda     #%10100000  ; Edit MMU 2 (MMU0 mapped)
+        jsr     _fill
+        lda     #%10110000  ; Edit MMU 3 (MMU0 mapped)
+        jsr     _fill
+                
+        stz     $0          ; Return MMU0, no LUT mapped.
+        rts
+_fill
+        sta     $0
+        ldx     #0
+_loop         
+        txa
+        sta     $8,x
+        sta     $10,x
+        inx
+        cpx     #8
+        bne     _loop
+        
+        rts        
 
 init
         jsr     INIT_CODEC
@@ -131,18 +164,38 @@ hw_nmi:
         rti
 
 hw_irq:
+      ; Save registers on user's stack
         pha
         phx
         phy
         
+        lda     $0      ; Read the current MMU state
+        stz     $0      ; MMU0 active, LUT0 not mapped.
+        sta     mmuctl  ; Save it (we know we're mapped now).
+
         lda     $1
         sta     iomap
+
+.if false
+      ; Display the MMU ID in the upper-left corner.
+        lda     #2
+        sta     $1
+        lda     mmuctl
+        and     #3
+        ora     #'0'
+        sta     $c000
+.endif        
+
         jsr     irq.dispatch
        
 _resume
         lda     iomap
         sta     $1
+
+        lda     mmuctl
+        sta     $0
         
+      ; Restore registers from user's stack.
         ply
         plx
         pla

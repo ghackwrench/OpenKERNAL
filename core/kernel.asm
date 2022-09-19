@@ -51,7 +51,7 @@ free_mem    = $800  ; Traditional start.
 *           = $e500
             .dsection   tables
             .dsection   kernel
-            .cerror * > $feff, "Out of kernel space."
+            .cerror * > $fff0, "Out of kernel space."
 
 *           = $ff81
 kernel      .namespace
@@ -264,7 +264,7 @@ LOAD        jmp     iec.load
 SAVE        jmp     iec.save
 SETTIM      jmp     settim
 RDTIM       jmp     rdtim
-STOP        jmp     stop
+STOP        jmp     keyboard.stop
 GETIN       jmp     io.getin
 CLALL       jmp     io.clall
 UDTIM       jmp     udtim

@@ -10,6 +10,9 @@
             .namespace  platform
 console     .namespace
 
+* = $c000
+            .binary     "platform/jr/Bm437_PhoenixEGA_8x8.bin"
+
 
 ROWS = 60
 COLS = 80
@@ -22,9 +25,6 @@ TEXT_LUT_BG	 = $D840
 ; Text Memory
 TEXT_MEM         = $C000 	; IO Page 2
 COLOR_MEM        = $C000 	; IO Page 3
-
-* = $c000
-font        .binary    "Bm437_PhoenixEGA_8x8.bin", 0, $400
 
             .section    dp
 src         .word   ?
@@ -54,19 +54,23 @@ init
 TinyVky_Init:
             stz     $1
 
+            stz     MASTER_CTRL_REG_L       ; Everything off during init.
+            stz     MASTER_CTRL_REG_H       ; 640x480
+
             lda     #Mstr_Ctrl_Text_Mode_En;
             sta     MASTER_CTRL_REG_L
-
-            jsr     init_palette
+            
+            jsr     init_text_palette
             jsr     init_border
             jsr     init_font
+            jsr     init_graphics_palettes
 
           ; We'll manage our own cursor
             stz     VKY_TXT_CURSOR_CTRL_REG
 
             rts
 
-init_palette
+init_text_palette
 
             ldx     #0
 _loop       lda     _palette,x
@@ -94,6 +98,85 @@ _palette
             .dword  $0088ff
             .dword  $bbbbbb
 
+init_graphics_palettes
+
+            phx
+            phy
+
+          ; Save I/O page
+            ldy     $1
+
+          ; Switch to I/O Page 1 (font and color LUTs)
+            lda     #1
+            sta     $1
+
+          ; Init ptr
+            stz     ptr+0
+            lda     #$d0
+            sta     ptr+1
+
+            ldx     #0          ; Starting color byte.
+_loop
+          ; Write the next color entry
+            jsr     write_bgra
+            inx
+
+          ; Advance the pointer; X will wrap around on its own
+
+            lda     ptr
+            adc     #4
+            sta     ptr
+            bne     _loop
+
+            lda     ptr+1
+            inc     a
+            sta     ptr+1
+            cmp     #$e0
+            bne     _loop
+
+          ; Restore I/O page
+            sty     $1
+            
+            ply
+            plx
+            rts
+
+write_bgra
+    ; X = rrrgggbb
+    ; A palette entry consists of four consecutive bytes: B, G, R, A.
+
+            phy
+            ldy     #3  ; Working backwards: A,R,G,B
+
+          ; Write the Alpha value        
+            lda     #255
+            jsr     _write
+            
+          ; Write the RGB values
+            txa
+_loop       dey
+            bmi     _done
+            jsr     _write            
+            bra     _loop
+            
+_done       ply
+            clc
+            rts
+            
+_write      
+          ; Write the upper bits to (ptr),y
+            pha
+            and     #%111_00000
+            sta     (ptr),y
+            pla
+
+          ; Shift in the next set of bits (blue truncated, alpha zero).
+            asl     a
+            asl     a
+            asl     a
+
+            rts
+            
 init_border
             stz     BORDER_CTRL_REG
             stz     BORDER_COLOR_R
@@ -243,6 +326,17 @@ _nc         asl     a
             lda     ptr+1
             adc     #$c0
             sta     ptr+1
+            
+          ; Save/restore the state of the i/o bit
+          ; while moving the cursor.
+            lda     $1
+            pha
+            lda     #2
+            sta     $1
+            jsr     cursor
+            pla
+            sta     $1
+            rts
 
 cursor
         ldy     cur_x
@@ -332,6 +426,8 @@ _putc
         jmp     insert
 
 _ctrl
+        cmp #5  ; CBM white; occludes ^e->eol below
+        beq cbm
         cmp     #17
         bcc     _indexed
         cmp     #27     ; esc
@@ -348,7 +444,7 @@ _table
         .ctrl   'b', left
         .ctrl   'c', ignore
         .ctrl   'd', ignore
-        .ctrl   'e', end        ; Also, CBM white...
+        .ctrl   'e', end
         .ctrl   'f', right   
         .ctrl   'g', bell
         .ctrl   'h', backspace
@@ -387,9 +483,7 @@ _table
         .entry  $13, home
         .entry  $14, backspace
         .entry  $1d, right
-
-        .entry  $d3, cls
-        .entry  $93, home
+        .entry  $93, cls
         .entry  $91, lf
 _end    = * - _table
 
@@ -415,12 +509,6 @@ reverse
 lf      rts
        
 cr
-        ldy     cur_x
-        lda     #32
-_loop   sta     (ptr),y
-        iny
-        cpy     #COLS
-        bcc     _loop
         stz     cur_x
 _lf     
         ldy     cur_y
@@ -509,6 +597,10 @@ insert
       ; Someone else can do PETSCII
         ldy     cur_x
         sta     (ptr),y
+        inc     $1
+        lda     color
+        sta     (ptr),y
+        dec     $1
         iny
         cpy     #COLS
         beq     cr
@@ -548,7 +640,14 @@ _loop   cmp     _table,x
         cpx     #_end
         bne     _loop
         rts
-_found  stx     color
+_found  
+        txa
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        ora     #6
+        sta     color
         rts
 _table  
         .byte   $90 ; color.black        
