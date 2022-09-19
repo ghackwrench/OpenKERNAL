@@ -176,12 +176,15 @@ hw_irq:
         lda     $1
         sta     iomap
 
+.if false
+      ; Display the MMU ID in the upper-left corner.
         lda     #2
         sta     $1
         lda     mmuctl
         and     #3
         ora     #'0'
         sta     $c000
+.endif        
 
         jsr     irq.dispatch
        
