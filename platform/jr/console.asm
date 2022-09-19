@@ -10,6 +10,9 @@
             .namespace  platform
 console     .namespace
 
+* = $c000
+            .binary     "platform/jr/Bm437_PhoenixEGA_8x8.bin"
+
 
 ROWS = 60
 COLS = 80

@@ -74,7 +74,7 @@ hw_reset:
         
       ; Switch to MMU 3 and chain to the kernel.
         lda     #%00110011  ; LUT3 mapped and pre-set for edit.
-        ;sta     $0
+        sta     $0
         jmp     kernel.start
 _error  jmp     kernel.error
 
@@ -179,8 +179,8 @@ hw_irq:
         lda     #2
         sta     $1
         lda     mmuctl
-        and     #%00011111
-        ora     #32
+        and     #3
+        ora     #'0'
         sta     $c000
 
         jsr     irq.dispatch
