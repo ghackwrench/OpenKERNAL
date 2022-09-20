@@ -308,19 +308,23 @@ gotoxy
     
             stz     ptr+1
             tya
-            asl     a           ; 16->32
-            asl     a           ; 32->64
+            cpy     #60
+            bcc     _ok
+            ldy     #59
+_ok
+            asl     a           ; x2
+            asl     a           ; x4
             rol     ptr+1
-            adc     cur_y
+            adc     cur_y       ; x5
             bcc     _nc
             inc     ptr+1
-_nc         asl     a
+_nc         asl     a           ; x10
             rol     ptr+1
-            asl     a
+            asl     a           ; x20
             rol     ptr+1
-            asl     a
+            asl     a           ; x40
             rol     ptr+1
-            asl     a
+            asl     a           ; x80
             rol     ptr+1
             sta     ptr+0
 

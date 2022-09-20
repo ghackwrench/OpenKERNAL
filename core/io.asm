@@ -363,6 +363,7 @@ _getchar
         lda     #2
         sta     $1
         lda     (platform.console.ptr),y
+        and     #$7f
         stx     $1
         plx
         
